@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>1A2B 猜數字遊戲</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;overflow:hidden}
+body{font-family:'PingFang TC','Noto Sans TC','Microsoft JhengHei',Arial,sans-serif;background:linear-gradient(135deg,#fce4ec,#f8bbd9);color:#333;
+  height:100vh;height:100dvh;display:flex;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+.container{width:100%;max-width:480px;max-height:820px;height:100%;align-self:center;background:#fff;border-radius:20px;padding:14px;box-shadow:0 10px 30px rgba(233,30,99,.2);display:flex;flex-direction:column;overflow:hidden}
+.screen{flex:1;min-height:0;display:flex;flex-direction:column}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{background:#2196f3;color:#fff;width:34px;height:34px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;line-height:1.1;font-weight:bold;flex:none}
+h1{margin:0;font-size:20px;white-space:nowrap}
+.btn{border:0;color:#fff;border-radius:14px;font:inherit;font-size:16px;font-weight:bold;cursor:pointer;padding:12px 22px;background:linear-gradient(145deg,#d48ca8,#c77a96);box-shadow:3px 3px 6px rgba(0,0,0,.2);touch-action:manipulation}
+.btn:active{transform:scale(.97);box-shadow:inset 2px 2px 4px rgba(0,0,0,.25)}
+.btn.on,.btn.main{background:linear-gradient(145deg,#ec407a,#c2185b)}
+.btn.on{transform:scale(1.05)}
+.btn.warm{background:linear-gradient(145deg,#ffb74d,#ff9800)}
+.btn.sm{padding:7px 9px;font-size:12px;border-radius:12px;box-shadow:2px 2px 4px rgba(0,0,0,.2)}
+.btn:focus-visible,.key:focus-visible{outline:3px solid #880e4f;outline-offset:2px}
+/* 設定畫面 */
+#setup{overflow-y:auto;text-align:center}
+#setup .logo{justify-content:center;margin:6px 0 14px}
+#setup h1{font-size:26px}
+#setup>h3{margin:0;color:#c2185b}
+.rules{background:#fce4ec;padding:12px 16px;border-radius:15px;border:2px dashed #d48ca8;text-align:left;margin-bottom:16px}
+.rules h3{margin:0 0 6px;color:#c2185b}
+.rules ul{margin:0;padding-left:20px;color:#555;line-height:1.6;font-size:14px}
+.diffs{display:flex;justify-content:center;gap:12px;margin:12px 0 18px}
+/* 遊戲畫面 */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px}
+.acts{display:flex;gap:5px}
+.stats{display:flex;gap:6px;margin-bottom:8px}
+.stat{flex:1;text-align:center;background:#fce4ec;border-radius:12px;padding:4px 2px;font-size:12px;font-weight:bold;color:#c2185b}
+.stat b{display:block;font-size:18px;color:#333}
+.history{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin-bottom:8px}
+.row{display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:6px;background:#fce4ec;border-radius:10px;border-left:5px solid #d48ca8}
+.row.win{border-left-color:#4caf50;background:#e8f5e9}
+.no{width:28px;font-size:12px;color:#b0a0a8}
+.gn{flex:1;font-size:20px;font-weight:bold;letter-spacing:5px;color:#333}
+.rs{font-size:18px;font-weight:bold;color:#c2185b}
+.empty{text-align:center;color:#c9a0b3;padding:24px 0;font-size:14px}
+.slots{display:flex;justify-content:center;gap:8px;margin-bottom:2px}
+.slots i{width:46px;height:50px;border:3px solid #f8bbd9;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:26px;font-weight:bold;color:#333}
+.slots i.f{border-color:#c2185b}
+.slots.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.msg{height:20px;text-align:center;font-size:13px;color:#d32f2f}
+.pad{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.pad.off{pointer-events:none;opacity:.5}
+.key{height:46px;border:0;border-radius:12px;color:#fff;font:inherit;font-size:18px;font-weight:bold;background:linear-gradient(145deg,#d48ca8,#c77a96);box-shadow:3px 3px 6px rgba(0,0,0,.2);cursor:pointer;touch-action:manipulation}
+.key:active:not(:disabled){transform:scale(.95);box-shadow:inset 2px 2px 4px rgba(0,0,0,.25)}
+.key:disabled{opacity:.3;cursor:default}
+.key.back{background:linear-gradient(145deg,#b0788f,#9c5f78)}
+.key.clr{background:linear-gradient(145deg,#ffb74d,#ff9800)}
+.key.go{grid-column:span 3;background:linear-gradient(145deg,#ec407a,#c2185b);font-size:20px}
+/* 彈窗 */
+.ov{position:fixed;inset:0;background:rgba(194,24,91,.25);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
+#ask{z-index:20}
+.ov.show{display:flex}
+.card{background:#fff;border:3px solid #e91e63;border-radius:20px;padding:22px;max-width:420px;width:100%;max-height:90%;overflow:auto;text-align:center;box-shadow:0 10px 30px rgba(233,30,99,.35)}
+.card h2{margin:0 0 10px;color:#c2185b}
+.card p{margin:6px 0 14px;color:#666}
+.card .btn{margin:4px;padding:11px 16px;font-size:15px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btns .btn{margin:0}
+.btns .main{grid-column:1/3}
+@media(max-height:640px){.key{height:40px}.slots i{height:44px}.stat b{font-size:16px}}
+@media(orientation:landscape) and (max-height:500px){
+  .container{max-width:none;padding:10px}
+  #game{display:grid;grid-template-columns:1fr 300px;grid-template-rows:auto auto 1fr;column-gap:14px}
+  .topbar{grid-column:1/3;margin-bottom:6px}
+  .stats{grid-column:1;margin-bottom:6px}
+  .history{grid-column:1;grid-row:3;margin-bottom:0}
+  .input{grid-column:2;grid-row:2/4;align-self:center}
+  .key{height:38px}.slots i{height:42px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <section class="screen" id="setup">
+    <div class="logo"><div class="logo-icon"><div>1A</div><div>2B</div></div><h1>1A2B 猜數字遊戲</h1></div>
+    <div class="rules" id="rulesInline"></div>
+    <h3 style="margin:0">選擇難度</h3>
+    <div class="diffs">
+      <button class="btn on" data-digits="3">3 位數</button>
+      <button class="btn" data-digits="4">4 位數</button>
+    </div>
+    <div><button class="btn main" id="startBtn">開始遊戲</button></div>
+  </section>
+
+  <section class="screen" id="game" hidden>
+    <div class="topbar">
+      <div class="logo"><div class="logo-icon"><div>1A</div><div>2B</div></div><h1>猜數字</h1></div>
+      <div class="acts">
+        <button class="btn sm" id="rulesBtn">規則</button>
+        <button class="btn sm warm" id="sameBtn">同題重玩</button>
+        <button class="btn sm" id="backBtn">換難度</button>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat">剩餘次數<b id="left">10</b></div>
+      <div class="stat">目標位數<b id="dg">3</b></div>
+      <div class="stat">已猜次數<b id="cnt">0</b></div>
+    </div>
+    <div class="history" id="history"></div>
+    <div class="input">
+      <div class="slots" id="slots"></div>
+      <div class="msg" id="msg"></div>
+      <div class="pad" id="pad"></div>
+    </div>
+  </section>
+</div>
+
+<div class="ov" id="over">
+  <div class="card over">
+    <h2 id="resTitle"></h2>
+    <p id="resText"></p>
+    <div class="btns">
+      <button class="btn main" id="againBtn">再來一局</button>
+      <button class="btn warm" id="sameBtn2">同題重玩</button>
+      <button class="btn" id="backBtn2">換難度</button>
+    </div>
+  </div>
+</div>
+<div class="ov" id="rulesModal">
+  <div class="card">
+    <div class="rules" id="rulesBody" style="margin-bottom:14px"></div>
+    <button class="btn" id="closeRules">知道了</button>
+  </div>
+</div>
+
+<div class="ov" id="ask">
+  <div class="card">
+    <p id="askText" style="color:#333;font-size:16px"></p>
+    <button class="btn main" id="askYes">確定</button>
+    <button class="btn" id="askNo">取消</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const MAX = 10;
+let target = '', digits = 3, guesses = 0, active = false, input = '', msgTimer = 0;
+
+const RULES = `<h3>遊戲規則</h3><ul>
+<li><b>A</b>：數字正確且位置正確</li>
+<li><b>B</b>：數字正確但位置錯誤</li>
+<li>答案的數字不會重複，你的猜測也不能重複</li>
+<li>例如：答案 1234，猜 1357 → <b>1A1B</b>（1 的位置也對 = A；3 數字對但位置不對 = B）</li>
+<li>你有 ${MAX} 次機會猜出答案！</li></ul>`;
+$('rulesInline').innerHTML = $('rulesBody').innerHTML = RULES;
+
+$('pad').innerHTML = [...'1234567890'].map(d => `<button class="key" data-k="${d}">${d}</button>`).join('') +
+    '<button class="key back" data-k="back" aria-label="退格">←</button><button class="key clr" data-k="clr">清除</button><button class="key go" data-k="go">猜！</button>';
+
+/* ---------- 輸入 ---------- */
+function msg(t) { $('msg').textContent = t; clearTimeout(msgTimer); if (t) msgTimer = setTimeout(() => $('msg').textContent = '', 2000); }
+function render() {
+    $('slots').innerHTML = Array.from({ length: digits }, (_, i) => `<i class="${input[i] ? 'f' : ''}">${input[i] || ''}</i>`).join('');
+    $('pad').querySelectorAll('.key').forEach(b => { if (/\d/.test(b.dataset.k)) b.disabled = input.includes(b.dataset.k); });
+}
+function press(k) {
+    if (!active) return;
+    if (/^\d$/.test(k)) {
+        if (input.includes(k)) { msg('數字不能重複'); return; }
+        if (input.length < digits) input += k;
+    } else if (k === 'back') input = input.slice(0, -1);
+    else if (k === 'clr') input = '';
+    else if (k === 'go') { guess(); return; }
+    render();
+}
+$('pad').addEventListener('click', e => { const b = e.target.closest('.key'); if (b) press(b.dataset.k); });
+
+/* ---------- 遊戲 ---------- */
+function gen() {
+    const n = [];
+    while (n.length < digits) { const d = Math.random() * 10 | 0; if (!n.includes(d)) n.push(d); }
+    return n.join('');
+}
+function calc(g, t) {
+    let a = 0, b = 0;
+    for (let i = 0; i < g.length; i++) { if (g[i] === t[i]) a++; else if (t.includes(g[i])) b++; }
+    return { a, b };
+}
+function stats() { $('left').textContent = MAX - guesses; $('cnt').textContent = guesses; $('dg').textContent = digits; }
+
+function begin(keepTarget) {
+    if (!keepTarget) target = gen();
+    guesses = 0; input = ''; active = true;
+    $('setup').hidden = true; $('game').hidden = false;
+    $('over').classList.remove('show'); $('pad').classList.remove('off');
+    $('history').innerHTML = '<div class="empty">還沒有猜測記錄，從下面開始輸入吧</div>';
+    msg(''); stats(); render();
+}
+function toSetup() {
+    active = false; input = '';
+    $('over').classList.remove('show'); $('game').hidden = true; $('setup').hidden = false;
+}
+function guess() {
+    if (input.length !== digits) {
+        msg(`請輸入 ${digits} 位數字`);
+        const s = $('slots'); s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake');
+        return;
+    }
+    guesses++;
+    const { a, b } = calc(input, target), h = $('history');
+    const won = a === digits;
+    h.querySelector('.empty')?.remove();
+    const row = document.createElement('div');
+    row.className = 'row' + (won ? ' win' : '');
+    row.innerHTML = `<div class="no">#${guesses}</div><div class="gn">${input}</div><div class="rs">${a}A${b}B</div>`;
+    h.prepend(row); h.scrollTop = 0; // 最新的猜測在最上面
+    input = ''; stats(); render();
+    if (won || guesses >= MAX) end(won);
+}
+function end(won) {
+    active = false; $('pad').classList.add('off');
+    $('resTitle').textContent = won ? '🎉 恭喜你猜對了！ 🎉' : '😢 很遺憾，次數用完了！';
+    $('resTitle').style.color = won ? '#4caf50' : '#d32f2f';
+    $('resText').textContent = won ? `你用了 ${guesses} 次就猜對了答案：${target}` : `正確答案是：${target}`;
+    $('over').classList.add('show');
+}
+// 用頁面內的確認視窗取代瀏覽器內建的 confirm()（某些手機瀏覽器會擋掉，造成按了沒反應）
+let askCb = null;
+function ask(text, cb) {
+    if (!(active && guesses > 0)) { cb(); return; }
+    $('askText').textContent = text; askCb = cb; $('ask').classList.add('show');
+}
+function closeAsk(ok) { $('ask').classList.remove('show'); const cb = askCb; askCb = null; if (ok && cb) cb(); }
+
+/* ---------- 事件 ---------- */
+document.querySelectorAll('.diffs .btn').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.diffs .btn').forEach(x => x.classList.remove('on'));
+    b.classList.add('on'); digits = +b.dataset.digits;
+});
+$('startBtn').onclick = () => begin(false);
+$('againBtn').onclick = () => begin(false);
+$('sameBtn').onclick = () => ask('目前的遊戲還沒結束，確定要放棄、同一題重新猜嗎？', () => begin(true));
+$('backBtn').onclick = () => ask('目前的遊戲還沒結束，確定要放棄並換難度嗎？', toSetup);
+$('sameBtn2').onclick = () => begin(true);
+$('askYes').onclick = () => closeAsk(true);
+$('askNo').onclick = () => closeAsk(false);
+$('backBtn2').onclick = toSetup;
+$('rulesBtn').onclick = () => $('rulesModal').classList.add('show');
+$('closeRules').onclick = () => $('rulesModal').classList.remove('show');
+$('rulesModal').onclick = e => { if (e.target === $('rulesModal')) $('rulesModal').classList.remove('show'); };
+
+addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const onBtn = !!e.target.closest('button'); // 焦點在按鈕上時，Enter 交給按鈕本身處理，避免重複觸發
+    if ($('ask').classList.contains('show')) { if (e.key === 'Escape') closeAsk(false); else if (e.key === 'Enter' && !onBtn) closeAsk(true); return; }
+    if ($('over').classList.contains('show')) { if (e.key === 'Enter' && !onBtn) begin(false); return; }
+    if ($('rulesModal').classList.contains('show')) { if (e.key === 'Escape' || (e.key === 'Enter' && !onBtn)) $('rulesModal').classList.remove('show'); return; }
+    if ($('game').hidden) { if (e.key === 'Enter' && !onBtn) begin(false); return; }
+    if (/^\d$/.test(e.key)) press(e.key);
+    else if (e.key === 'Backspace') { e.preventDefault(); press('back'); }
+    else if (e.key === 'Delete' || e.key === 'Escape') press('clr');
+    else if (e.key === 'Enter') { e.preventDefault(); press('go'); }
+});
+</script>
+</body>
+</html>
