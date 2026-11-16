@@ -432,6 +432,18 @@
     let audioCtx = null;
     let soundOn = true;
 
+    // 解鎖瀏覽器自動播放限制：只要使用者在頁面上有第一次點擊或觸控，就喚醒音效引擎
+    function unlockAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+    window.addEventListener('pointerdown', unlockAudioContext, { once: true });
+    window.addEventListener('keydown', unlockAudioContext, { once: true });
+
     function playPopSound(freq = 480, duration = 0.06) {
       if (!soundOn) return;
       try {
