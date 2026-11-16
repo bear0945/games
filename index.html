@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的遊戲書櫃 | Personal Game Bookshelf</title>
+  <!-- 載入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 載入 Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================
+       完全還原草圖配色的房間與書櫃樣式 (零外部圖片)
+       ========================================== */
+    :root {
+      --wall-color: #f7c594;       /* 溫暖杏桃色牆面 */
+      --trim-top: #522927;         /* 踢腳板上緣深褐 */
+      --trim-body: #783a37;        /* 踢腳板主體紅褐 */
+      --floor-color: #f5b0b6;      /* 粉紅地板 */
+      --cabinet-frame: #381005;    /* 書櫃深咖啡色外框與層板 */
+      --cabinet-inner: #7d4406;    /* 書櫃內部棕色背板 */
+      --callout-border: #bdbdbd;   /* 說明框與引出線的灰色 */
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: var(--wall-color);
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    /* 房間背景結構：牆面、踢腳板、地板 */
+    .room-scene {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .wall-baseboard {
+      width: 100%;
+      height: 110px;
+      background-color: var(--trim-body);
+      border-top: 22px solid var(--trim-top);
+      position: absolute;
+      bottom: 65px;
+      left: 0;
+      z-index: 1;
+    }
+
+    .room-floor {
+      width: 100%;
+      height: 65px;
+      background-color: var(--floor-color);
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    /* 書櫃主體結構 */
+    .bookcase {
+      position: relative;
+      z-index: 10;
+      width: 340px;
+      max-width: 92vw;
+      background-color: var(--cabinet-frame);
+      padding: 14px 14px 12px 14px;
+      margin-bottom: 50px; /* 站在地板上 */
+      box-shadow: 0 18px 35px rgba(0, 0, 0, 0.28);
+      border-radius: 2px;
+    }
+
+    /* 每一層書架格 */
+    .shelf-row {
+      background-color: var(--cabinet-inner);
+      height: 118px;
+      margin-bottom: 14px;
+      padding: 0 8px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 6px;
+      position: relative;
+      box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.35);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .shelf-row:last-child {
+      margin-bottom: 0;
+    }
+
+    /* 書櫃右側邊緣的小木栓裝飾 (還原草圖細節) */
+    .cabinet-peg {
+      position: absolute;
+      right: -4px;
+      width: 5px;
+      height: 10px;
+      background-color: var(--cabinet-frame);
+      border-radius: 0 4px 4px 0;
+    }
+
+    /* 一套書 (代表一個遊戲，本身就是超連結) */
+    .book-set {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
+      position: relative;
+      padding-top: 6px;
+    }
+
+    .book-set:hover {
+      transform: translateY(-8px);
+      filter: brightness(1.08) drop-shadow(0 6px 8px rgba(0,0,0,0.4));
+      z-index: 20;
+    }
+
+    /* 單本書脊樣式 */
+    .book-spine {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      border-bottom: none;
+      box-shadow: inset 2px 0 3px rgba(255, 255, 255, 0.18), inset -2px 0 4px rgba(0, 0, 0, 0.2);
+      border-radius: 2px 2px 0 0;
+    }
+
+    /* 書背上的白色標籤 (粗款與細線款) */
+    .spine-label-thick {
+      width: 42%;
+      height: 58%;
+      background-color: #ffffff;
+      border-radius: 1px;
+    }
+
+    .spine-label-thin {
+      width: 3px;
+      height: 68%;
+      background-color: #ffffff;
+      border-radius: 1px;
+    }
+
+    /* 盆栽與泰迪熊搖晃動畫 */
+    @keyframes flowerWiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-8deg) scale(1.06); }
+      50% { transform: rotate(7deg) scale(1.06); }
+      75% { transform: rotate(-4deg); }
+    }
+
+    .decor-item {
+      cursor: pointer;
+      transform-origin: bottom center;
+      transition: transform 0.2s ease;
+    }
+
+    .decor-item:hover {
+      transform: scale(1.06);
+    }
+
+    .wiggling {
+      animation: flowerWiggle 0.55s ease-in-out;
+    }
+
+    /* 右側說明白框：改為絕對定位/懸浮顯示，完全不推擠書櫃高度 */
+    .callout-card {
+      background-color: #ffffff;
+      border: 5px solid var(--callout-border);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 30;
+      pointer-events: none; /* 滑鼠移開書本即消失，不擋點擊 */
+    }
+
+    .callout-hidden {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    .callout-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .callout-divider {
+      height: 5px;
+      background-color: var(--callout-border);
+      border-radius: 999px;
+      width: 82%;
+      margin: 6px auto 12px auto;
+    }
+
+    /* 動態引出折線 SVG 畫布 */
+    #leaderLineSvg {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 25;
+      transition: opacity 0.18s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 全螢幕動態 SVG：負責畫出草圖中的「灰色 Z 字型引出線」 -->
+  <svg id="leaderLineSvg" class="opacity-0">
+    <polyline id="leaderPolyline" 
+              fill="none" 
+              stroke="#bdbdbd" 
+              stroke-width="4.5" 
+              stroke-linecap="square"
+              stroke-linejoin="miter"
+              points="" />
+    <!-- 起點小圓點 -->
+    <circle id="leaderStartDot" cx="-20" cy="-20" r="4" fill="#bdbdbd" />
+  </svg>
+
+  <!-- 頂部簡潔小提示與音效按鈕 -->
+  <header class="fixed top-0 left-0 right-0 z-40 flex justify-between items-center px-4 sm:px-8 py-3 pointer-events-none">
+    <div class="bg-white/80 backdrop-blur-sm px-3.5 py-1.5 rounded-full shadow-sm border border-amber-900/15 pointer-events-auto flex items-center gap-2">
+      <span class="text-base">📚</span>
+      <span class="text-xs sm:text-sm font-bold text-amber-950">我的小遊戲書櫃</span>
+    </div>
+
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="soundBtn" class="bg-white/80 hover:bg-white px-3 py-1.5 rounded-full text-xs font-bold text-amber-950 shadow-sm border border-amber-900/15 transition">
+        🔊 音效開
+      </button>
+    </div>
+  </header>
+
+  <!-- 房間主舞台 -->
+  <div class="room-scene pt-16 px-4">
+
+    <!-- 中央書櫃定位容器：書櫃固定置中，說明框以絕對定位懸浮在右側，完全不會讓書櫃浮起或位移 -->
+    <div class="relative z-20 flex justify-center items-end w-full max-w-5xl mx-auto">
+
+      <!-- ==========================================
+           核心四層木書櫃 (由 JS 自動根據陣列渲染)
+           ========================================== -->
+      <div id="bookcaseContainer" class="bookcase shrink-0">
+        <!-- 右側裝飾小木栓 (草圖細節) -->
+        <div class="cabinet-peg" style="top: 132px;"></div>
+        <div class="cabinet-peg" style="top: 264px;"></div>
+
+        <!-- 四層書架將由 JS 生成於此 -->
+        <div id="shelvesMount"></div>
+      </div>
+
+      <!-- ==========================================
+           草圖右側說明框 (滑鼠移到書上才顯示，移開即消失)
+           採用絕對定位，不佔排版空間，書櫃穩穩站在地板上
+           ========================================== -->
+      <div id="calloutBox" 
+           class="callout-card callout-hidden fixed lg:absolute top-16 lg:top-6 left-1/2 -translate-x-1/2 lg:translate-x-0 lg:left-[calc(50%+225px)] w-64 sm:w-72 lg:w-64 p-4 rounded-sm">
+        <!-- 遊戲標題 -->
+        <h2 id="infoTitle" class="text-xl font-black text-center text-neutral-800 tracking-wide">
+          猜數字
+        </h2>
+        <!-- 草圖中的粗灰底線 -->
+        <div class="callout-divider"></div>
+
+        <!-- 遊戲說明內文 -->
+        <p id="infoDesc" class="text-sm text-neutral-700 leading-relaxed text-center font-medium py-1">
+          說明...
+        </p>
+
+        <div class="mt-3 pt-2 border-t border-neutral-100 text-[11px] text-neutral-400 text-center">
+          ✨ 點擊書本直接開始遊戲
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 房間底部踢腳板與粉紅地板 -->
+    <div class="wall-baseboard"></div>
+    <div class="room-floor"></div>
+  </div>
+
+  <!-- 吐司訊息通知 -->
+  <div id="toastMsg" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-neutral-900/90 text-white text-xs sm:text-sm px-4 py-2.5 rounded-full shadow-xl pointer-events-none opacity-0 transition-all duration-300">
+    提示訊息
+  </div>
+
+  <script>
+    /* ==========================================================
+       1. 書櫃設定資料庫 (SHELF_DATA)
+       對應 https://bear0945.github.io/games/ 下的 7 款遊戲與擺飾
+       ========================================================== */
+    const BASE_URL = "https://bear0945.github.io/games/";
+
+    const SHELF_DATA = [
+      // ---------------- 第一層 (最頂層) ----------------
+      [
+        {
+          id: "happy-farm",
+          type: "game",
+          title: "快樂農場",
+          desc: "趕跑前來覓食的動物們 努力賺最後一筆準備過冬吧!",
+          url: BASE_URL + "farm.html",
+          color: "#b3744d",   // 淺咖啡色書皮
+          labelType: "thick", // 粗白標
+          books: [
+            { w: 40, h: 95 },
+            { w: 40, h: 95 },
+            { w: 40, h: 93 },
+            { w: 40, h: 94 }
+          ]
+        },
+        {
+          id: "guess-number",
+          type: "game",
+          title: "猜數字",
+          desc: "可選猜三個或四個數字",
+          url: BASE_URL + "1A2B.html",
+          color: "#8f0016",   // 深酒紅色書皮 (草圖右上角)
+          labelType: "thin",  // 細白線
+          books: [
+            { w: 30, h: 106 },
+            { w: 30, h: 106 },
+            { w: 30, h: 105 }
+          ]
+        }
+      ],
+
+      // ---------------- 第二層 ----------------
+      [
+        {
+          id: "brick-breaker",
+          type: "game",
+          title: "打磚塊",
+          desc: "放空大腦的休閒遊戲",
+          url: BASE_URL + "tower_defense_breakoutV60.html",
+          color: "#302a26",   // 黑褐色高書
+          labelType: "thin",
+          books: [
+            { w: 32, h: 105 },
+            { w: 32, h: 103 },
+            { w: 32, h: 106 },
+            { w: 32, h: 102 }
+          ]
+        },
+        {
+          id: "ludo-game",
+          type: "game",
+          title: "飛行棋",
+          desc: "可自己跟電腦玩 也可四位玩家玩(本地)",
+          url: BASE_URL + "ludo.html",
+          color: "#f2741f",   // 亮橘色矮書 (中間雙白線寬書)
+          labelType: "thin",
+          books: [
+            { w: 30, h: 78 },
+            { w: 54, h: 80, doubleLine: true },
+            { w: 30, h: 77 }
+          ]
+        }
+      ],
+
+      // ---------------- 第三層 ----------------
+      [
+        {
+          id: "tetris-game",
+          type: "game",
+          title: "俄羅斯方塊",
+          desc: "就是俄羅斯方塊",
+          url: BASE_URL + "tetris_game.html",
+          color: "#2c42cc",   // 寶藍色厚書
+          labelType: "thick",
+          books: [
+            { w: 46, h: 98 },
+            { w: 46, h: 99 },
+            { w: 46, h: 98 }
+          ]
+        },
+        {
+          id: "memory-game",
+          type: "game",
+          title: "翻牌配對",
+          desc: "考驗你的記憶",
+          url: BASE_URL + "memorygame.html",
+          color: "#b5b5b5",   // 淺灰色書
+          labelType: "thin",
+          books: [
+            { w: 32, h: 86 },
+            { w: 32, h: 87 },
+            { w: 32, h: 86 }
+          ]
+        }
+      ],
+
+      // ---------------- 第四層 (最底層：鬱金香 + 泰迪熊 + 數獨書冊) ----------------
+      [
+        {
+          id: "bottom-decors",
+          type: "decor-group"
+        },
+        {
+          id: "sudoku-game",
+          type: "game",
+          title: "數獨",
+          desc: "經典9x9數獨遊戲",
+          url: BASE_URL + "sudoku.html",
+          color: "#b3744d",   // 駝棕色長書
+          labelType: "thin",
+          books: [
+            { w: 30, h: 108 },
+            { w: 30, h: 108 },
+            { w: 30, h: 108 },
+            { w: 30, h: 109 }
+          ]
+        }
+      ]
+    ];
+
+    /* ==========================================================
+       2. 輕量音效合成器 (Web Audio API，免外部音檔)
+       ========================================================== */
+    let audioCtx = null;
+    let soundOn = true;
+
+    function playPopSound(freq = 480, duration = 0.06) {
+      if (!soundOn) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const now = audioCtx.currentTime;
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.5, now + duration);
+
+        gain.gain.setValueAtTime(0.22, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+      } catch (e) {}
+    }
+
+    /* ==========================================================
+       3. 渲染書櫃、鬱金香與泰迪熊
+       ========================================================== */
+    let hoveredGameId = null;
+
+    function renderBookcase() {
+      const mount = document.getElementById('shelvesMount');
+      mount.innerHTML = SHELF_DATA.map((rowItems, rowIndex) => {
+        const innerHTML = rowItems.map(item => {
+          if (item.type === 'decor-group') {
+            return createBottomDecorsHTML();
+          }
+          return createBookSetHTML(item);
+        }).join('');
+
+        return `<div class="shelf-row" data-row="${rowIndex}">${innerHTML}</div>`;
+      }).join('');
+
+      bindBookEvents();
+    }
+
+    // 產生最下層左側的「鬱金香盆栽 + 泰迪熊」組合
+    function createBottomDecorsHTML() {
+      return `
+        <div class="flex items-end gap-1 pl-1 pb-0.5">
+          <!-- 鬱金香盆栽 -->
+          <div id="decor-tulip" class="decor-item flex flex-col items-center justify-end" title="點我搖一搖！">
+            <svg width="52" height="94" viewBox="0 0 60 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M30 46 L30 68" stroke="#2ca02c" stroke-width="5" stroke-linecap="round"/>
+              <path d="M30 62 C18 54 14 44 22 46 C26 47 29 54 30 60" fill="#2ca02c" stroke="#ffffff" stroke-width="1.2"/>
+              <path d="M30 64 C42 58 46 48 38 50 C34 51 31 57 30 62" fill="#2ca02c" stroke="#ffffff" stroke-width="1.2"/>
+              <path d="M14 26 C12 12 24 10 26 22 C28 10 36 10 38 22 C42 12 50 18 46 32 C43 43 36 46 29 46 C21 46 16 40 14 26 Z" 
+                    fill="#ffffff" stroke="#d61f1f" stroke-width="4" stroke-linejoin="round"/>
+              <path d="M22 18 C28 24 33 32 30 44" stroke="#d61f1f" stroke-width="3.5" stroke-linecap="round"/>
+              <path d="M38 19 C33 25 30 33 30 44" stroke="#d61f1f" stroke-width="3.5" stroke-linecap="round"/>
+              <rect x="17" y="66" width="26" height="32" rx="5" fill="#f5b800" stroke="#d49b00" stroke-width="2"/>
+              <line x1="23" y1="70" x2="23" y2="94" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="29" y1="72" x2="29" y2="95" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="35" y1="70" x2="35" y2="94" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <!-- 可愛泰迪熊玩偶 -->
+          <div id="decor-teddy" class="decor-item flex flex-col items-center justify-end" title="點泰迪熊一下！">
+            <svg width="64" height="86" viewBox="0 0 72 92" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 左右圓耳朵 -->
+              <circle cx="19" cy="18" r="9.5" fill="#a65e2e" stroke="#5c2c0c" stroke-width="2.5"/>
+              <circle cx="19" cy="18" r="4.5" fill="#e6b38a"/>
+              <circle cx="53" cy="18" r="9.5" fill="#a65e2e" stroke="#5c2c0c" stroke-width="2.5"/>
+              <circle cx="53" cy="18" r="4.5" fill="#e6b38a"/>
+              <!-- 手臂 -->
+              <ellipse cx="16" cy="56" rx="8" ry="12" transform="rotate(20 16 56)" fill="#a65e2e" stroke="#5c2c0c" stroke-width="2.5"/>
+              <ellipse cx="56" cy="56" rx="8" ry="12" transform="rotate(-20 56 56)" fill="#a65e2e" stroke="#5c2c0c" stroke-width="2.5"/>
+              <!-- 圓肚子身體 -->
+              <ellipse cx="36" cy="62" rx="18" ry="20" fill="#a65e2e" stroke="#5c2c0c" stroke-width="2.5"/>
+              <ellipse cx="36" cy="63" rx="11" ry="12.5" fill="#e6b38a"/>
+              <!-- 熊頭 -->
+              <circle cx="36" cy="31" r="17.5" fill="#a65e2e" stroke="#5c2c0c" stroke-width="2.5"/>
+              <!-- 紅色蝴蝶結領結 -->
+              <path d="M27 45 L36 49 L27 53 Z" fill="#d61f1f" stroke="#7a0b0b" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M45 45 L36 49 L45 53 Z" fill="#d61f1f" stroke="#7a0b0b" stroke-width="1.5" stroke-linejoin="round"/>
+              <circle cx="36" cy="49" r="3" fill="#ff4d4d" stroke="#7a0b0b" stroke-width="1.5"/>
+              <!-- 眼睛與腮紅 -->
+              <circle cx="29.5" cy="28" r="2.6" fill="#2b1204"/>
+              <circle cx="28.8" cy="27.2" r="0.9" fill="#ffffff"/>
+              <circle cx="42.5" cy="28" r="2.6" fill="#2b1204"/>
+              <circle cx="41.8" cy="27.2" r="0.9" fill="#ffffff"/>
+              <ellipse cx="24" cy="32.5" rx="3.2" ry="1.8" fill="#f28b82" opacity="0.75"/>
+              <ellipse cx="48" cy="32.5" rx="3.2" ry="1.8" fill="#f28b82" opacity="0.75"/>
+              <!-- 淺色嘴鼻區 -->
+              <ellipse cx="36" cy="35.5" rx="7.5" ry="5.8" fill="#f3cfa6"/>
+              <ellipse cx="36" cy="33.5" rx="3.2" ry="2.2" fill="#421c07"/>
+              <path d="M36 35.5 L36 38.5 M33 38.5 Q36 40.5 39 38.5" stroke="#421c07" stroke-width="2" stroke-linecap="round" fill="none"/>
+              <!-- 坐著的左右腳掌 -->
+              <ellipse cx="22" cy="79" rx="9.5" ry="7.5" fill="#a65e2e" stroke="#5c2c0c" stroke-width="2.5"/>
+              <ellipse cx="22" cy="79.5" rx="5.5" ry="4.2" fill="#e6b38a"/>
+              <ellipse cx="50" cy="79" rx="9.5" ry="7.5" fill="#a65e2e" stroke="#5c2c0c" stroke-width="2.5"/>
+              <ellipse cx="50" cy="79.5" rx="5.5" ry="4.2" fill="#e6b38a"/>
+            </svg>
+          </div>
+        </div>
+      `;
+    }
+
+    // 產生一套書的 HTML (直接做成 <a> 超連結，點書即進入遊戲)
+    function createBookSetHTML(game) {
+      const booksHTML = game.books.map((b, idx) => {
+        let labelHTML = '';
+        if (b.doubleLine) {
+          labelHTML = `
+            <div class="flex justify-between w-3/5 h-[68%]">
+              <div class="spine-label-thin !h-full"></div>
+              <div class="spine-label-thin !h-full"></div>
+            </div>
+          `;
+        } else if (game.labelType === 'thick') {
+          labelHTML = `<div class="spine-label-thick"></div>`;
+        } else {
+          labelHTML = `<div class="spine-label-thin"></div>`;
+        }
+
+        return `
+          <div class="book-spine" 
+               data-book-index="${idx}"
+               style="width: ${b.w}px; height: ${b.h}px; background-color: ${game.color};">
+            ${labelHTML}
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <a id="bookset-${game.id}" 
+           href="${game.url}"
+           class="book-set" 
+           data-game-id="${game.id}"
+           aria-label="${game.title}">
+          ${booksHTML}
+        </a>
+      `;
+    }
+
+    /* ==========================================================
+       4. 綁定滑鼠移入顯示說明框、移出隱藏，以及擺飾點擊動畫
+       ========================================================== */
+    function bindBookEvents() {
+      document.querySelectorAll('.book-set').forEach(el => {
+        const gameId = el.getAttribute('data-game-id');
+
+        // 滑鼠移過去：顯示說明視窗與折線
+        el.addEventListener('mouseenter', () => {
+          playPopSound(540, 0.05);
+          showGameCallout(gameId);
+        });
+
+        // 滑鼠移走：隱藏說明視窗與折線
+        el.addEventListener('mouseleave', () => {
+          hideGameCallout();
+        });
+
+        // 點擊書本時播放輕快音效並直接跳轉網址
+        el.addEventListener('click', () => {
+          playPopSound(360, 0.08);
+        });
+      });
+
+      // 鬱金香點擊效果
+      const flowerPot = document.getElementById('decor-tulip');
+      if (flowerPot) {
+        flowerPot.addEventListener('click', () => {
+          playPopSound(680, 0.1);
+          flowerPot.classList.remove('wiggling');
+          void flowerPot.offsetWidth;
+          flowerPot.classList.add('wiggling');
+          showToast("🌷 小鬱金香朝你點了點頭！");
+        });
+      }
+
+      // 泰迪熊點擊效果
+      const teddyBear = document.getElementById('decor-teddy');
+      if (teddyBear) {
+        teddyBear.addEventListener('click', () => {
+          playPopSound(420, 0.12);
+          teddyBear.classList.remove('wiggling');
+          void teddyBear.offsetWidth;
+          teddyBear.classList.add('wiggling');
+          showToast("🧸 泰迪熊開心地晃了晃耳朵！");
+        });
+      }
+    }
+
+    // 根據 ID 找到對應的遊戲物件
+    function findGameObj(id) {
+      for (const row of SHELF_DATA) {
+        for (const item of row) {
+          if (item.id === id) return item;
+        }
+      }
+      return null;
+    }
+
+    // 顯示右側說明框與折線
+    function showGameCallout(gameId) {
+      const game = findGameObj(gameId);
+      if (!game) return;
+
+      hoveredGameId = gameId;
+
+      document.getElementById('infoTitle').textContent = game.title;
+      document.getElementById('infoDesc').textContent = game.desc;
+
+      const calloutBox = document.getElementById('calloutBox');
+      const svgOverlay = document.getElementById('leaderLineSvg');
+
+      calloutBox.classList.remove('callout-hidden');
+      calloutBox.classList.add('callout-visible');
+      svgOverlay.classList.remove('opacity-0');
+
+      requestAnimationFrame(updateLeaderLine);
+    }
+
+    // 隱藏右側說明框與折線
+    function hideGameCallout() {
+      hoveredGameId = null;
+      const calloutBox = document.getElementById('calloutBox');
+      const svgOverlay = document.getElementById('leaderLineSvg');
+
+      calloutBox.classList.remove('callout-visible');
+      calloutBox.classList.add('callout-hidden');
+      svgOverlay.classList.add('opacity-0');
+    }
+
+    // 動態計算座標並畫出草圖中的「Z 字型灰色引出線」
+    function updateLeaderLine() {
+      const polyline = document.getElementById('leaderPolyline');
+      const startDot = document.getElementById('leaderStartDot');
+      if (!hoveredGameId) return;
+
+      const activeSetEl = document.getElementById(`bookset-${hoveredGameId}`);
+      const calloutEl = document.getElementById('calloutBox');
+
+      if (!activeSetEl || !calloutEl) return;
+
+      // 在窄螢幕 (手機/平板直立) 下隱藏跨畫面折線
+      if (window.innerWidth < 1024) {
+        polyline.setAttribute('points', '');
+        startDot.setAttribute('cx', '-20');
+        startDot.setAttribute('cy', '-20');
+        return;
+      }
+
+      const spines = activeSetEl.querySelectorAll('.book-spine');
+      const anchorSpine = spines.length > 1 ? spines[spines.length - 2] : spines[0];
+      const bookRect = (anchorSpine || activeSetEl).getBoundingClientRect();
+      const boxRect = calloutEl.getBoundingClientRect();
+
+      // 起點 (x1, y1)：書本下半部偏右處
+      const x1 = bookRect.left + bookRect.width * 0.55;
+      const y1 = bookRect.top + bookRect.height * 0.72;
+
+      // 終點 (x4, y4)：右側說明白框的左側邊緣偏上方
+      const x4 = boxRect.left;
+      const y4 = boxRect.top + 45;
+
+      // 中間轉折點 X：在書櫃右緣與說明框左緣之間折彎
+      const bookcaseRect = document.getElementById('bookcaseContainer').getBoundingClientRect();
+      const midX = bookcaseRect.right + (x4 - bookcaseRect.right) * 0.52;
+
+      const pointsStr = `${x1},${y1} ${midX},${y1} ${midX},${y4} ${x4},${y4}`;
+      polyline.setAttribute('points', pointsStr);
+
+      startDot.setAttribute('cx', x1);
+      startDot.setAttribute('cy', y1);
+    }
+
+    /* ==========================================================
+       5. 介面輔助功能 (Toast、音效開關、視窗縮放監聽)
+       ========================================================== */
+    let toastTimer = null;
+    function showToast(text) {
+      const toast = document.getElementById('toastMsg');
+      toast.textContent = text;
+      toast.style.opacity = '1';
+      toast.style.transform = 'translate(-50%, -6px)';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translate(-50%, 0)';
+      }, 2400);
+    }
+
+    // 音效開關
+    const soundBtn = document.getElementById('soundBtn');
+    soundBtn.addEventListener('click', () => {
+      soundOn = !soundOn;
+      soundBtn.textContent = soundOn ? '🔊 音效開' : '🔇 音效關';
+      if (soundOn) playPopSound(520, 0.06);
+    });
+
+    // 當視窗縮放或滾動時，若正在顯示說明框則即時更新折線座標
+    window.addEventListener('resize', () => {
+      if (hoveredGameId) updateLeaderLine();
+    });
+    window.addEventListener('scroll', () => {
+      if (hoveredGameId) updateLeaderLine();
+    }, { passive: true });
+
+    // 初始化啟動
+    window.addEventListener('DOMContentLoaded', () => {
+      renderBookcase();
+    });
+  </script>
+</body>
+</html>
