@@ -70,12 +70,40 @@
       position: relative;
       z-index: 10;
       width: 340px;
-      max-width: 92vw;
       background-color: var(--cabinet-frame);
       padding: 14px 14px 12px 14px;
       margin-bottom: 50px; /* 站在地板上 */
       box-shadow: 0 18px 35px rgba(0, 0, 0, 0.28);
       border-radius: 2px;
+      transform-origin: bottom center;
+    }
+
+    /* 針對超窄螢幕（如小尺寸手機），將整座書櫃與裡面的書等比例縮小，確保書本永遠不會突出書櫃 */
+    @media (max-width: 380px) {
+      .bookcase {
+        transform: scale(0.88);
+      }
+    }
+    @media (max-width: 335px) {
+      .bookcase {
+        transform: scale(0.78);
+      }
+    }
+
+    /* 每一層書架格 */
+    .shelf-row {
+      background-color: var(--cabinet-inner);
+      height: 118px;
+      margin-bottom: 14px;
+      padding: 0 6px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 4px;
+      position: relative;
+      box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.35);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      overflow: hidden; /* 防止任何子元素意外超出內框 */
     }
 
     /* 每一層書架格 */
@@ -117,9 +145,11 @@
       transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
       position: relative;
       padding-top: 6px;
+      min-width: 0;
     }
 
-    .book-set:hover {
+    .book-set:hover,
+    .book-set.active-touch {
       transform: translateY(-8px);
       filter: brightness(1.08) drop-shadow(0 6px 8px rgba(0,0,0,0.4));
       z-index: 20;
@@ -131,6 +161,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-shrink: 1;
       border: 1px solid rgba(0, 0, 0, 0.25);
       border-bottom: none;
       box-shadow: inset 2px 0 3px rgba(255, 255, 255, 0.18), inset -2px 0 4px rgba(0, 0, 0, 0.2);
@@ -279,7 +310,7 @@
           說明...
         </p>
 
-        <div class="mt-3 pt-2 border-t border-neutral-100 text-[11px] text-neutral-400 text-center">
+        <div id="infoHint" class="mt-3 pt-2 border-t border-neutral-100 text-[11px] text-neutral-400 text-center">
           ✨ 點擊書本直接開始遊戲
         </div>
       </div>
@@ -417,10 +448,10 @@
           color: "#b3744d",   // 駝棕色長書
           labelType: "thin",
           books: [
-            { w: 30, h: 108 },
-            { w: 30, h: 108 },
-            { w: 30, h: 108 },
-            { w: 30, h: 109 }
+            { w: 28, h: 108 },
+            { w: 28, h: 108 },
+            { w: 28, h: 108 },
+            { w: 28, h: 109 }
           ]
         }
       ]
@@ -593,24 +624,44 @@
        4. 綁定滑鼠移入顯示說明框、移出隱藏，以及擺飾點擊動畫
        ========================================================== */
     function bindBookEvents() {
+      const isTouchDevice = () => window.matchMedia('(hover: none)').matches;
+
       document.querySelectorAll('.book-set').forEach(el => {
         const gameId = el.getAttribute('data-game-id');
 
-        // 滑鼠移過去：顯示說明視窗與折線
+        // 電腦滑鼠移過去：顯示說明視窗與折線
         el.addEventListener('mouseenter', () => {
+          if (isTouchDevice()) return;
           playPopSound(540, 0.05);
-          showGameCallout(gameId);
+          showGameCallout(gameId, false);
         });
 
-        // 滑鼠移走：隱藏說明視窗與折線
+        // 電腦滑鼠移走：隱藏說明視窗與折線
         el.addEventListener('mouseleave', () => {
+          if (isTouchDevice()) return;
           hideGameCallout();
         });
 
-        // 點擊書本時播放輕快音效並直接跳轉網址
-        el.addEventListener('click', () => {
+        // 點擊書本：電腦直接跳轉；手機點第一下先看說明，點第二下才進入遊戲
+        el.addEventListener('click', (e) => {
+          if (isTouchDevice() && hoveredGameId !== gameId) {
+            e.preventDefault();
+            playPopSound(540, 0.05);
+            document.querySelectorAll('.book-set').forEach(b => b.classList.remove('active-touch'));
+            el.classList.add('active-touch');
+            showGameCallout(gameId, true);
+            return;
+          }
           playPopSound(360, 0.08);
         });
+      });
+
+      // 手機版點擊書櫃外的空白處時，收起說明視窗
+      document.addEventListener('pointerdown', (e) => {
+        if (!e.target.closest('.book-set') && hoveredGameId) {
+          document.querySelectorAll('.book-set').forEach(b => b.classList.remove('active-touch'));
+          hideGameCallout();
+        }
       });
 
       // 鬱金香點擊效果
@@ -649,7 +700,7 @@
     }
 
     // 顯示右側說明框與折線
-    function showGameCallout(gameId) {
+    function showGameCallout(gameId, isTouch = false) {
       const game = findGameObj(gameId);
       if (!game) return;
 
@@ -657,6 +708,9 @@
 
       document.getElementById('infoTitle').textContent = game.title;
       document.getElementById('infoDesc').textContent = game.desc;
+      document.getElementById('infoHint').textContent = isTouch
+        ? '👆 再點一次這套書開始遊戲'
+        : '✨ 點擊書本直接開始遊戲';
 
       const calloutBox = document.getElementById('calloutBox');
       const svgOverlay = document.getElementById('leaderLineSvg');
