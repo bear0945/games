@@ -24,17 +24,21 @@ body{font-family:'PingFang TC','Noto Sans TC','Microsoft JhengHei',Arial,sans-se
 .btn.note{background:linear-gradient(145deg,#ffb74d,#ff9800)}
 .btn.note.on{background:linear-gradient(145deg,#f57c00,#e65100)}
 .seg:focus-visible,.btn:focus-visible{outline:3px solid #880e4f;outline-offset:2px}
-.sudoku-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:1px;background:#c2185b;border:3px solid #c2185b;border-radius:4px;width:100%}
-.cell{aspect-ratio:1;min-width:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,5.4vw,24px);font-weight:bold;color:#333;cursor:pointer;position:relative;user-select:none;touch-action:manipulation}
-.cell.br{border-right:2px solid #c2185b}
-.cell.bb{border-bottom:2px solid #c2185b}
-.cell.given{background:#f5f5f5;color:#c2185b}
+.sudoku-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:1px;background:#e1a5bd;border:3px solid #880e4f;border-radius:6px;width:100%;overflow:hidden}
+.cell{aspect-ratio:1;min-width:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,5.4vw,24px);font-weight:bold;color:#2c3e50;cursor:pointer;position:relative;user-select:none;touch-action:manipulation}
+.cell.br{border-right:2.5px solid #880e4f}
+.cell.bb{border-bottom:2.5px solid #880e4f}
+.cell.given{background:#f5f0f2;color:#ad1457}
 .cell.hl{background:#fce4ec}
+.cell.hl.given{background:#f3d5e0}
 .cell.same{background:#f8bbd9}
-.cell.conflict{background:#ffebee;color:#f44336}
+.cell.same.given{background:#f4a8cc;color:#880e4f}
+.cell.conflict:not(.given){background:#ffebee;color:#d32f2f}
+.cell.given.conflict{background:#fce4ec;color:#880e4f;text-decoration:underline;text-underline-offset:3px}
 .cell.wrong{background:#ffcdd2;color:#d32f2f}
 .cell.selected{background:linear-gradient(145deg,#d48ca8,#c77a96);color:#fff;box-shadow:inset 2px 2px 4px rgba(0,0,0,.2)}
-.cell.selected.conflict,.cell.selected.wrong{background:#e57373;color:#fff}
+.cell.selected.given{background:linear-gradient(145deg,#b86b8a,#a35675);color:#fff}
+.cell.selected.conflict:not(.given),.cell.selected.wrong{background:#e57373;color:#fff}
 .notes{position:absolute;inset:1px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));pointer-events:none}
 .notes i{font-style:normal;font-size:clamp(7px,2.3vw,11px);line-height:1;min-width:0;min-height:0;font-weight:normal;color:#777;display:flex;align-items:center;justify-content:center}
 .notes i.m{color:#c2185b;font-weight:bold}
@@ -85,7 +89,7 @@ body{font-family:'PingFang TC','Noto Sans TC','Microsoft JhengHei',Arial,sans-se
 const $ = id => document.getElementById(id);
 const NAMES = { easy: '簡單', medium: '中等', hard: '困難' };
 const TARGET = { easy: 40, medium: 32, hard: 26 }; // 目標提示數（出題時保證唯一解）
-const KEY = 'sudoku_save_v2';
+const KEY = 'sudoku_save_v3';
 const bit = n => 1 << (n - 1);
 const blank = () => Array.from({ length: 9 }, () => Array(9).fill(0));
 const pc = x => { let n = 0; while (x) { x &= x - 1; n++; } return n; };
@@ -104,13 +108,31 @@ function shuffle(a) {
     return a;
 }
 
+// 驗證盤面是否合法（無同行、同列、同宮重複數字）
+function isValidBoard(g) {
+    const R = Array(9).fill(0), C = Array(9).fill(0), B = Array(9).fill(0);
+    const bi = (r, c) => (r / 3 | 0) * 3 + (c / 3 | 0);
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+        const v = g[r][c];
+        if (!v) continue;
+        const m = bit(v);
+        if ((R[r] & m) || (C[c] & m) || (B[bi(r, c)] & m)) return false;
+        R[r] |= m; C[c] |= m; B[bi(r, c)] |= m;
+    }
+    return true;
+}
+
 // 回溯解題（最少候選數優先）。數到 limit 個解就停；out 會收到第一組解；rnd 為隨機填入順序
 function solve(g, limit, out, rnd) {
     const R = Array(9).fill(0), C = Array(9).fill(0), B = Array(9).fill(0);
     const bi = (r, c) => (r / 3 | 0) * 3 + (c / 3 | 0);
     for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
         const v = g[r][c];
-        if (v) { const m = bit(v); R[r] |= m; C[c] |= m; B[bi(r, c)] |= m; }
+        if (v) {
+            const m = bit(v);
+            if ((R[r] & m) || (C[c] & m) || (B[bi(r, c)] & m)) return 0; // 防呆：若初始盤面有重複則無解
+            R[r] |= m; C[c] |= m; B[bi(r, c)] |= m;
+        }
     }
     let cnt = 0;
     (function rec() {
@@ -136,19 +158,24 @@ function solve(g, limit, out, rnd) {
 }
 
 function generate(d) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const full = blank();
+        solve(blank(), 1, full, true);
+        const puz = full.map(r => r.slice());
+        const order = shuffle(Array.from({ length: 81 }, (_, i) => i));
+        let clues = 81;
+        for (const i of order) {
+            if (clues <= TARGET[d]) break;
+            const r = i / 9 | 0, c = i % 9, v = puz[r][c];
+            puz[r][c] = 0;
+            // 挖掉後若不再是唯一解，就把數字放回去
+            if (solve(puz.map(x => x.slice()), 2) !== 1) puz[r][c] = v; else clues--;
+        }
+        if (isValidBoard(full) && isValidBoard(puz)) return { sol: full, puz };
+    }
     const full = blank();
     solve(blank(), 1, full, true);
-    const puz = full.map(r => r.slice());
-    const order = shuffle(Array.from({ length: 81 }, (_, i) => i));
-    let clues = 81;
-    for (const i of order) {
-        if (clues <= TARGET[d]) break;
-        const r = i / 9 | 0, c = i % 9, v = puz[r][c];
-        puz[r][c] = 0;
-        // 挖掉後若不再是唯一解，就把數字放回去
-        if (solve(puz.map(x => x.slice()), 2) !== 1) puz[r][c] = v; else clues--;
-    }
-    return { sol: full, puz };
+    return { sol: full, puz: full.map(r => r.slice()) };
 }
 
 /* ---------- 狀態與存檔 ---------- */
@@ -160,6 +187,8 @@ function load() {
     try {
         const s = JSON.parse(localStorage.getItem(KEY));
         if (!s || ![s.sol, s.given, s.grid, s.notes].every(a => Array.isArray(a) && a.length === 9)) return false;
+        const givenBoard = s.grid.map((row, r) => row.map((v, c) => s.given[r][c] ? v : 0));
+        if (!isValidBoard(s.sol) || !isValidBoard(givenBoard)) return false;
         sol = s.sol; given = s.given; grid = s.grid; notes = s.notes;
         hist = s.hist || []; elapsed = s.elapsed | 0; won = !!s.won;
         diff = NAMES[s.diff] ? s.diff : 'easy';
@@ -301,9 +330,17 @@ function undo() {
 function hint() {
     if (!can()) return;
     const { r, c } = sel;
-    if (grid[r][c] === sol[r][c]) { msg('這格已經填對了'); return; }
-    push(); place(r, c, sol[r][c]); wrong.clear();
-    msg(`提示：這格的答案是 ${sol[r][c]}`); after();
+    const ans = sol[r][c];
+    if (grid[r][c] === ans) { msg('這格已經填對了'); return; }
+    push();
+    // 若同行、同列、同宮格有玩家誤填的相同數字，自動清除該錯誤格
+    for (let i = 0; i < 9; i++) for (let j = 0; j < 9; j++) {
+        if ((i !== r || j !== c) && !given[i][j] && grid[i][j] === ans && peer(r, c, i, j)) {
+            grid[i][j] = 0;
+        }
+    }
+    place(r, c, ans); wrong.clear();
+    msg(`提示：這格的答案是 ${ans}`); after();
 }
 
 function check() {
@@ -326,8 +363,8 @@ function toggleNote() {
     msg(noteMode ? '筆記模式：點數字來新增／移除筆記' : '數字模式：點數字來填入答案');
 }
 
-function newGame() {
-    if (!won && hist.length && !confirm('目前的棋局還沒完成，確定要開始新遊戲嗎？')) return;
+function newGame(skipConfirm = false) {
+    if (!skipConfirm && !won && hist.length && !confirm('目前的棋局還沒完成，確定要開始新遊戲嗎？')) return;
     const g = generate(diff);
     sol = g.sol; grid = g.puz.map(r => r.slice()); given = g.puz.map(r => r.map(v => v !== 0));
     notes = blank(); hist = []; wrong.clear(); elapsed = 0; won = false; sel = null; noteMode = false;
@@ -336,10 +373,14 @@ function newGame() {
 
 /* ---------- 事件 ---------- */
 document.querySelectorAll('.seg').forEach(b => b.onclick = () => {
+    if (diff === b.dataset.d && !won) {
+        msg(`目前已是「${NAMES[diff]}」模式（點「新遊戲」可重開一局）`);
+        return;
+    }
     diff = b.dataset.d; syncDiff();
-    msg(`已選擇「${NAMES[diff]}」，按「新遊戲」開始`);
+    newGame();
 });
-$('newBtn').onclick = newGame;
+$('newBtn').onclick = () => newGame(false);
 $('undoBtn').onclick = undo;
 $('eraseBtn').onclick = erase;
 $('noteBtn').onclick = toggleNote;
@@ -377,8 +418,8 @@ build();
 if (load()) {
     syncDiff(); syncNote(); render();
     if (won) { const s = $('status'); s.className = 'status win'; s.textContent = `🎉 恭喜完成！用時 ${fmt(elapsed)} 🎉`; }
-    else msg('已接續上次的棋局');
-} else { syncDiff(); newGame(); }
+    else msg('已接續上次的棋局（點「新遊戲」可重開一局）');
+} else { syncDiff(); newGame(true); }
 </script>
 </body>
 </html>
