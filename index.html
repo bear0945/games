@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <script data-goatcounter="https://bear0945.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>我的遊戲書櫃 | Personal Game Bookshelf</title>
@@ -230,11 +232,11 @@
     /* 牆壁指針時鐘 */
     .wall-clock {
       position: absolute;
-      left: max(14px, calc(50% - 268px));
-      bottom: 410px;
+      left: max(18px, calc(50% - 295px));
+      bottom: 430px;
       z-index: 36;
-      width: 68px;
-      height: 68px;
+      width: 74px;
+      height: 74px;
       border-radius: 50%;
       background-color: #fffdf8;
       border: 5px solid var(--cabinet-frame);
@@ -249,11 +251,11 @@
     /* 牆壁電燈開關 */
     .wall-switch {
       position: absolute;
-      left: max(31px, calc(50% - 251px));
-      bottom: 315px;
+      left: max(38px, calc(50% - 275px));
+      bottom: 335px;
       z-index: 38;
-      width: 34px;
-      height: 52px;
+      width: 36px;
+      height: 54px;
       background-color: #fffdf9;
       border: 3px solid #d6c5b3;
       border-radius: 4px;
@@ -272,7 +274,7 @@
     /* 「円」字型小茶几與馬克杯組合 (站在粉紅地板上，位於電燈開關正下方) */
     .side-table-group {
       position: absolute;
-      left: max(10px, calc(50% - 272px));
+      left: max(4px, calc(50% - 315px));
       bottom: 50px; /* 與書櫃同樣站在地板高度 */
       z-index: 15;
       display: flex;
@@ -282,24 +284,25 @@
     }
 
     /* 手機窄螢幕自適應縮放，確保時鐘、茶几與書櫃互不重疊 */
-    @media (max-width: 540px) {
+    @media (max-width: 580px) {
       .bookcase {
-        transform: scale(0.76);
+        transform: scale(0.74);
+        margin-left: 44px;
       }
       .side-table-group {
         left: 6px;
-        transform: scale(0.76);
+        transform: scale(0.68);
       }
       .wall-switch {
-        left: 22px;
-        bottom: 270px;
-        transform: scale(0.88);
+        left: 24px;
+        bottom: 285px;
+        transform: scale(0.85);
       }
       .wall-clock {
         left: 10px;
-        bottom: 350px;
-        width: 58px;
-        height: 58px;
+        bottom: 365px;
+        width: 60px;
+        height: 60px;
       }
     }
 
@@ -437,9 +440,9 @@
 
     <!-- 電燈開關正下方的「円」字型小茶几 + 熱可可馬克杯 -->
     <div class="side-table-group">
-      <!-- 放在茶几上的熱可可馬克杯 -->
-      <div id="decor-mug" class="decor-item -mb-1 z-10" title="熱可可馬克杯">
-        <svg width="42" height="44" viewBox="0 0 44 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- 放在茶几上的熱可可馬克杯 (放大尺寸以符合書本與玩偶比例) -->
+      <div id="decor-mug" class="decor-item -mb-1.5 z-10" title="熱可可馬克杯">
+        <svg width="62" height="65" viewBox="0 0 44 46" fill="none" xmlns="http://www.w3.org/2000/svg">
           <!-- 熱氣 -->
           <path class="steam-line" d="M15 14 C13 10 17 7 15 3" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
           <path class="steam-line-delay" d="M23 13 C21 9 25 6 23 2" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
@@ -453,8 +456,8 @@
         </svg>
       </div>
 
-      <!-- 長得像「円」字的小茶几 (與書櫃同色系木頭質感) -->
-      <svg width="78" height="112" viewBox="0 0 78 112" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-md">
+      <!-- 長得像「円」字的小茶几 (放大至超過牆面踢腳板高度，與書櫃比例一致) -->
+      <svg width="118" height="172" viewBox="0 0 78 112" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-lg">
         <!-- 「円」的門框結構：左桌腳 + 頂部桌面 + 右桌腳 -->
         <path d="M9 112 V12 C9 7.5 12.5 4 17 4 H61 C65.5 4 69 7.5 69 12 V112" 
               stroke="#381005" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/>
