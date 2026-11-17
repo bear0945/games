@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>馬卡龍糖果盒 15-Puzzle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', 'Arial', sans-serif;
+            background: #FDE2E4;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+
+        /* 左上角返回書櫃按鈕 */
+        .back-link {
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            background: #FAF6F0;
+            color: #8B5A5A;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(139, 90, 90, 0.12);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .back-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(139, 90, 90, 0.2);
+            background: #fff;
+        }
+
+        .game-container {
+            background: #FAF6F0;
+            border-radius: 16px;
+            padding: 28px 26px;
+            box-shadow: 0 10px 36px rgba(139, 90, 90, 0.12);
+            text-align: center;
+            max-width: 100%;
+            position: relative;
+        }
+
+        .title {
+            color: #8B5A5A;
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            letter-spacing: 0.5px;
+        }
+
+        /* 狀態與紀錄欄 */
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: #F4EFE6;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            color: #8B5A5A;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .stat-item span {
+            color: #D97777;
+            font-size: 17px;
+            margin-left: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 遊戲盤面（採用絕對定位實現平滑滑動） */
+        .game-board {
+            --tile-size: 78px;
+            --gap: 8px;
+            --pad: 12px;
+            width: calc(var(--tile-size) * 4 + var(--gap) * 3 + var(--pad) * 2);
+            height: calc(var(--tile-size) * 4 + var(--gap) * 3 + var(--pad) * 2);
+            margin: 0 auto;
+            background: #F4EFE6;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+            touch-action: none;
+        }
+
+        /* 底座淺色格線感 */
+        .grid-slot {
+            position: absolute;
+            width: var(--tile-size);
+            height: var(--tile-size);
+            border-radius: 12px;
+            background: rgba(250, 246, 240, 0.7);
+        }
+
+        .tile {
+            position: absolute;
+            width: var(--tile-size);
+            height: var(--tile-size);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+            border-radius: 12px;
+            cursor: default;
+            transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.14);
+            user-select: none;
+            z-index: 2;
+        }
+
+        /* 同行或同列可推的方塊 */
+        .tile.movable {
+            cursor: pointer;
+        }
+
+        @media (hover: hover) {
+            .tile.movable:hover {
+                filter: brightness(1.04);
+                box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            }
+        }
+
+        .tile.movable:active {
+            filter: brightness(0.97);
+        }
+
+        /* 預覽完成圖時的過渡效果 */
+        .game-board.peeking .tile {
+            transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+            opacity: 0.92;
+        }
+
+        /* 數字對應的經典馬卡龍色 */
+        .tile[data-number="1"]  { background: #FAD6A5; }
+        .tile[data-number="2"]  { background: #F9C4A0; }
+        .tile[data-number="3"]  { background: #F9B2A6; }
+        .tile[data-number="4"]  { background: #F8A1A1; }
+        .tile[data-number="5"]  { background: #FAE8A4; }
+        .tile[data-number="6"]  { background: #F6F2B7; }
+        .tile[data-number="7"]  { background: #CFF6C8; }
+        .tile[data-number="8"]  { background: #B8E9C0; }
+        .tile[data-number="9"]  { background: #C6BDF7; }
+        .tile[data-number="10"] { background: #B5CFFA; }
+        .tile[data-number="11"] { background: #A6D9F5; }
+        .tile[data-number="12"] { background: #AEE7E3; }
+        .tile[data-number="13"] { background: #D1B3F9; }
+        .tile[data-number="14"] { background: #E0BBF5; }
+        .tile[data-number="15"] { background: #F1C0E8; }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #F8A1A1;
+            color: white;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+            user-select: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-peek {
+            background: #B8E9C0;
+        }
+
+        .hint-text {
+            font-size: 13px;
+            color: #A88484;
+            margin-top: 14px;
+        }
+
+        /* 過關彈窗與遮罩 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(90, 60, 60, 0.35);
+            backdrop-filter: blur(2px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .win-message {
+            background: #FAF6F0;
+            padding: 32px 36px;
+            border-radius: 18px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+            text-align: center;
+            animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            max-width: 90%;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .win-message h2 {
+            color: #F8A1A1;
+            margin-bottom: 12px;
+            font-size: 26px;
+        }
+
+        .win-message p {
+            color: #8B5A5A;
+            font-size: 18px;
+            margin: 6px 0;
+            font-weight: bold;
+        }
+
+        .new-record-badge {
+            display: inline-block;
+            background: #FAE8A4;
+            color: #8B5A5A;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 900;
+            margin-top: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        /* 小螢幕自適應 */
+        @media (max-width: 420px) {
+            .game-board {
+                --tile-size: 68px;
+                --gap: 6px;
+                --pad: 10px;
+            }
+            .title { font-size: 22px; }
+            .tile { font-size: 22px; }
+            .game-container { padding: 22px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← 返回書櫃</a>
+
+    <div class="game-container">
+        <h1 class="title">🍭 馬卡龍糖果盒 15-Puzzle 🍭</h1>
+
+        <div class="stats-bar">
+            <div class="stat-item">步數<span id="moveCount">0</span></div>
+            <div class="stat-item">時間<span id="timerDisplay">00:00</span></div>
+            <div class="stat-item">最佳<span id="bestMoves">--</span></div>
+        </div>
+        
+        <div class="game-board" id="gameBoard"></div>
+        
+        <div class="controls">
+            <button class="btn" onclick="shuffleGame()">重新洗牌</button>
+            <button class="btn btn-peek" id="peekBtn">👀 按住看完成圖</button>
+        </div>
+
+        <div class="hint-text">💡 支援整排連推、滑動與鍵盤方向鍵操作</div>
+    </div>
+
+    <div class="modal-overlay" id="winOverlay">
+        <div class="win-message">
+            <h2>🎉 恭喜完成！🎉</h2>
+            <p>總共用了 <span id="finalMoves">0</span> 步</p>
+            <p>耗時 <span id="finalTime">00:00</span></p>
+            <div id="newRecordBadge" class="new-record-badge" style="display: none;">👑 刷新最佳步數紀錄！</div>
+            <br>
+            <button class="btn" onclick="shuffleGame()" style="margin-top: 16px;">再玩一局</button>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'macaron_15puzzle_best_moves';
+        let board = [];
+        let emptyPos = { row: 3, col: 3 };
+        let moveCount = 0;
+        let isPeeking = false;
+        let isWon = false;
+
+        // 計時器變數
+        let timerInterval = null;
+        let secondsElapsed = 0;
+        let timerStarted = false;
+
+        // 保存固定 DOM 節點以實現平滑 CSS 位移
+        const tileElements = {};
+
+        function initGame() {
+            createBoardDOM();
+            loadBestRecord();
+            shuffleGame();
+            setupControls();
+        }
+
+        // 建立固定背景格與 1~15 號方塊 DOM
+        function createBoardDOM() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+
+            // 16 個底格
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'grid-slot';
+                    setElementGridPosition(slot, r, c);
+                    gameBoard.appendChild(slot);
+                }
+            }
+
+            // 1~15 號馬卡龍方塊
+            for (let num = 1; num <= 15; num++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                tile.setAttribute('data-number', num);
+                tile.textContent = num;
+                tile.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    handleTileClick(num);
+                });
+                gameBoard.appendChild(tile);
+                tileElements[num] = tile;
+            }
+        }
+
+        // 計算並設定方塊的 CSS transform 座標
+        function setElementGridPosition(el, row, col) {
+            el.style.transform = `translate(calc(var(--pad) + ${col} * (var(--tile-size) + var(--gap))), calc(var(--pad) + ${row} * (var(--tile-size) + var(--gap))))`;
+        }
+
+        // 根據目前 board 狀態更新所有方塊位置與可推狀態
+        function syncBoardView() {
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    const num = board[r][c];
+                    if (num !== 0) {
+                        const tile = tileElements[num];
+                        setElementGridPosition(tile, r, c);
+                        // 只要與空格同行或同列即可連推
+                        if (!isWon && (r === emptyPos.row || c === emptyPos.col)) {
+                            tile.classList.add('movable');
+                        } else {
+                            tile.classList.remove('movable');
+                        }
+                    }
+                }
+            }
+        }
+
+        // 尋找數字目前所在的行列
+        function findNumberPos(num) {
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (board[r][c] === num) return { row: r, col: c };
+                }
+            }
+            return null;
+        }
+
+        // 點擊方塊（支援單顆與同行/同列整排連推）
+        function handleTileClick(num) {
+            if (isPeeking || isWon) return;
+            const pos = findNumberPos(num);
+            if (!pos) return;
+
+            const { row, col } = pos;
+            if (row !== emptyPos.row && col !== emptyPos.col) return;
+
+            if (!timerStarted) startTimer();
+
+            let stepsMoved = 0;
+
+            if (row === emptyPos.row) {
+                // 水平連推
+                const dir = col < emptyPos.col ? 1 : -1;
+                for (let c = emptyPos.col; c !== col; c -= dir) {
+                    board[row][c] = board[row][c - dir];
+                    stepsMoved++;
+                }
+                board[row][col] = 0;
+                emptyPos.col = col;
+            } else if (col === emptyPos.col) {
+                // 垂直連推
+                const dir = row < emptyPos.row ? 1 : -1;
+                for (let r = emptyPos.row; r !== row; r -= dir) {
+                    board[r][col] = board[r - dir][col];
+                    stepsMoved++;
+                }
+                board[row][col] = 0;
+                emptyPos.row = row;
+            }
+
+            moveCount += stepsMoved;
+            updateMoveCount();
+            syncBoardView();
+
+            if (checkWin()) {
+                handleWin();
+            }
+        }
+
+        // 執行保證 100% 有解的隨機洗牌（避免來回無效步）
+        function shuffleBoard() {
+            board = [
+                [1, 2, 3, 4],
+                [5, 6, 7, 8],
+                [9, 10, 11, 12],
+                [13, 14, 15, 0]
+            ];
+            emptyPos = { row: 3, col: 3 };
+
+            let prevEmpty = { row: -1, col: -1 };
+            for (let i = 0; i < 200; i++) {
+                const moves = getValidMoves().filter(
+                    m => !(m.row === prevEmpty.row && m.col === prevEmpty.col)
+                );
+                const randomMove = moves[Math.floor(Math.random() * moves.length)];
+                prevEmpty = { ...emptyPos };
+
+                board[emptyPos.row][emptyPos.col] = board[randomMove.row][randomMove.col];
+                board[randomMove.row][randomMove.col] = 0;
+                emptyPos = randomMove;
+            }
+
+            // 萬一剛好洗回完成狀態，再多走一步
+            if (checkWin()) {
+                const moves = getValidMoves();
+                const m = moves[0];
+                board[emptyPos.row][emptyPos.col] = board[m.row][m.col];
+                board[m.row][m.col] = 0;
+                emptyPos = m;
+            }
+
+            syncBoardView();
+        }
+
+        function getValidMoves() {
+            const moves = [];
+            const dirs = [
+                { row: -1, col: 0 }, { row: 1, col: 0 },
+                { row: 0, col: -1 }, { row: 0, col: 1 }
+            ];
+            dirs.forEach(d => {
+                const nr = emptyPos.row + d.row;
+                const nc = emptyPos.col + d.col;
+                if (nr >= 0 && nr < 4 && nc >= 0 && nc < 4) {
+                    moves.push({ row: nr, col: nc });
+                }
+            });
+            return moves;
+        }
+
+        function checkWin() {
+            let expected = 1;
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    if (r === 3 && c === 3) return board[r][c] === 0;
+                    if (board[r][c] !== expected++) return false;
+                }
+            }
+            return true;
+        }
+
+        function handleWin() {
+            isWon = true;
+            stopTimer();
+            syncBoardView();
+
+            const isNewRecord = saveBestRecord(moveCount);
+            document.getElementById('finalMoves').textContent = moveCount;
+            document.getElementById('finalTime').textContent = formatTime(secondsElapsed);
+            document.getElementById('newRecordBadge').style.display = isNewRecord ? 'inline-block' : 'none';
+
+            setTimeout(() => {
+                document.getElementById('winOverlay').classList.add('show');
+            }, 220);
+        }
+
+        function shuffleGame() {
+            isWon = false;
+            isPeeking = false;
+            moveCount = 0;
+            updateMoveCount();
+            resetTimer();
+            document.getElementById('winOverlay').classList.remove('show');
+            document.getElementById('gameBoard').classList.remove('peeking');
+            shuffleBoard();
+        }
+
+        function updateMoveCount() {
+            document.getElementById('moveCount').textContent = moveCount;
+        }
+
+        // 計時器功能
+        function startTimer() {
+            timerStarted = true;
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                document.getElementById('timerDisplay').textContent = formatTime(secondsElapsed);
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        function resetTimer() {
+            stopTimer();
+            timerStarted = false;
+            secondsElapsed = 0;
+            document.getElementById('timerDisplay').textContent = '00:00';
+        }
+
+        function formatTime(sec) {
+            const m = String(Math.floor(sec / 60)).padStart(2, '0');
+            const s = String(sec % 60).padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        // 最佳紀錄存取
+        function loadBestRecord() {
+            const best = localStorage.getItem(STORAGE_KEY);
+            document.getElementById('bestMoves').textContent = best ? `${best}步` : '--';
+        }
+
+        function saveBestRecord(moves) {
+            const best = localStorage.getItem(STORAGE_KEY);
+            if (!best || moves < parseInt(best, 10)) {
+                localStorage.setItem(STORAGE_KEY, moves);
+                loadBestRecord();
+                return true;
+            }
+            return false;
+        }
+
+        // 綁定「按住看完成圖」與鍵盤方向鍵
+        function setupControls() {
+            const peekBtn = document.getElementById('peekBtn');
+            const gameBoard = document.getElementById('gameBoard');
+
+            const startPeek = (e) => {
+                e.preventDefault();
+                if (isWon) return;
+                isPeeking = true;
+                gameBoard.classList.add('peeking');
+                // 暫時將 1~15 號排回標準位置供對照
+                for (let num = 1; num <= 15; num++) {
+                    const r = Math.floor((num - 1) / 4);
+                    const c = (num - 1) % 4;
+                    setElementGridPosition(tileElements[num], r, c);
+                }
+            };
+
+            const endPeek = () => {
+                if (!isPeeking) return;
+                isPeeking = false;
+                gameBoard.classList.remove('peeking');
+                syncBoardView();
+            };
+
+            peekBtn.addEventListener('pointerdown', startPeek);
+            window.addEventListener('pointerup', endPeek);
+            window.addEventListener('pointercancel', endPeek);
+
+            // 鍵盤方向鍵操作（方向代表將方塊推入空格的方向）
+            window.addEventListener('keydown', (e) => {
+                if (isPeeking || isWon) return;
+                let targetRow = emptyPos.row;
+                let targetCol = emptyPos.col;
+
+                if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+                    targetRow = emptyPos.row + 1; // 下方方塊往上推
+                } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+                    targetRow = emptyPos.row - 1; // 上方方塊往下推
+                } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                    targetCol = emptyPos.col + 1; // 右側方塊往左推
+                } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                    targetCol = emptyPos.col - 1; // 左側方塊往右推
+                } else {
+                    return;
+                }
+
+                if (targetRow >= 0 && targetRow < 4 && targetCol >= 0 && targetCol < 4) {
+                    e.preventDefault();
+                    handleTileClick(board[targetRow][targetCol]);
+                }
+            });
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
