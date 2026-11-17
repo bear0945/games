@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script data-goatcounter="https://bear0945.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>我的遊戲書櫃 | Personal Game Bookshelf</title>
@@ -67,45 +65,28 @@
       z-index: 1;
     }
 
-    /* 書櫃主體結構 */
-    .bookcase {
+    /* 整合時鐘、開關、茶几與書櫃的固定比例舞台，窄螢幕時整體一起等比例縮放，絕不重疊 */
+    .furniture-stage {
       position: relative;
+      width: 500px;
+      height: 600px;
+      margin-bottom: 50px; /* 穩穩站在粉紅地板上 */
+      z-index: 20;
+      transform-origin: bottom center;
+      flex-shrink: 0;
+    }
+
+    /* 書櫃主體結構：固定在舞台右側 */
+    .bookcase {
+      position: absolute;
+      right: 10px;
+      bottom: 0;
       z-index: 10;
       width: 340px;
       background-color: var(--cabinet-frame);
       padding: 14px 14px 12px 14px;
-      margin-bottom: 50px; /* 站在地板上 */
       box-shadow: 0 18px 35px rgba(0, 0, 0, 0.28);
       border-radius: 2px;
-      transform-origin: bottom center;
-    }
-
-    /* 針對超窄螢幕（如小尺寸手機），將整座書櫃與裡面的書等比例縮小，確保書本永遠不會突出書櫃 */
-    @media (max-width: 380px) {
-      .bookcase {
-        transform: scale(0.88);
-      }
-    }
-    @media (max-width: 335px) {
-      .bookcase {
-        transform: scale(0.78);
-      }
-    }
-
-    /* 每一層書架格 */
-    .shelf-row {
-      background-color: var(--cabinet-inner);
-      height: 118px;
-      margin-bottom: 14px;
-      padding: 0 6px;
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 4px;
-      position: relative;
-      box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.35);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-      overflow: hidden; /* 防止任何子元素意外超出內框 */
     }
 
     /* 每一層書架格 */
@@ -117,10 +98,11 @@
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
-      gap: 6px;
+      gap: 4px;
       position: relative;
       box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.35);
       border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      overflow: hidden; /* 防止任何子元素意外超出內框 */
     }
 
     .shelf-row:last-child {
@@ -229,11 +211,11 @@
       animation: tailWag 3s ease-in-out infinite;
     }
 
-    /* 牆壁指針時鐘 */
+    /* 牆壁指針時鐘 (固定於舞台左上方，與書櫃保持安全距離) */
     .wall-clock {
       position: absolute;
-      left: max(18px, calc(50% - 295px));
-      bottom: 430px;
+      left: 26px;
+      bottom: 390px;
       z-index: 36;
       width: 74px;
       height: 74px;
@@ -248,11 +230,11 @@
       transform: scale(1.06);
     }
 
-    /* 牆壁電燈開關 */
+    /* 牆壁電燈開關 (固定於時鐘正下方) */
     .wall-switch {
       position: absolute;
-      left: max(38px, calc(50% - 275px));
-      bottom: 335px;
+      left: 45px;
+      bottom: 295px;
       z-index: 38;
       width: 36px;
       height: 54px;
@@ -271,39 +253,16 @@
       transform: scale(0.94);
     }
 
-    /* 「円」字型小茶几與馬克杯組合 (站在粉紅地板上，位於電燈開關正下方) */
+    /* 「円」字型小茶几與馬克杯組合 (固定於開關正下方、書櫃左側) */
     .side-table-group {
       position: absolute;
-      left: max(4px, calc(50% - 315px));
-      bottom: 50px; /* 與書櫃同樣站在地板高度 */
+      left: 4px;
+      bottom: 0;
       z-index: 15;
       display: flex;
       flex-direction: column;
       align-items: center;
       transform-origin: bottom left;
-    }
-
-    /* 手機窄螢幕自適應縮放，確保時鐘、茶几與書櫃互不重疊 */
-    @media (max-width: 580px) {
-      .bookcase {
-        transform: scale(0.74);
-        margin-left: 44px;
-      }
-      .side-table-group {
-        left: 6px;
-        transform: scale(0.68);
-      }
-      .wall-switch {
-        left: 24px;
-        bottom: 285px;
-        transform: scale(0.85);
-      }
-      .wall-clock {
-        left: 10px;
-        bottom: 365px;
-        width: 60px;
-        height: 60px;
-      }
     }
 
     /* 關燈模式的聚光燈遮罩 */
@@ -406,73 +365,73 @@
   <!-- 房間主舞台 -->
   <div class="room-scene pt-16 px-4">
 
-    <!-- 牆壁同步指針時鐘 (與使用者系統時間即時同步) -->
-    <div id="wallClock" class="wall-clock" title="點擊查看現在時間">
-      <svg id="clockSvg" width="100%" height="100%" viewBox="0 0 100 100">
-        <!-- 12 個整點刻度 -->
-        <line x1="50" y1="8" x2="50" y2="15" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
-        <line x1="92" y1="50" x2="85" y2="50" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
-        <line x1="50" y1="92" x2="50" y2="85" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
-        <line x1="8" y1="50" x2="15" y2="50" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
-        <circle cx="71" cy="14" r="1.8" fill="#7d4406"/>
-        <circle cx="86" cy="29" r="1.8" fill="#7d4406"/>
-        <circle cx="86" cy="71" r="1.8" fill="#7d4406"/>
-        <circle cx="71" cy="86" r="1.8" fill="#7d4406"/>
-        <circle cx="29" cy="86" r="1.8" fill="#7d4406"/>
-        <circle cx="14" cy="71" r="1.8" fill="#7d4406"/>
-        <circle cx="14" cy="29" r="1.8" fill="#7d4406"/>
-        <circle cx="29" cy="14" r="1.8" fill="#7d4406"/>
-        <!-- 時針、分針、秒針 -->
-        <line id="clockHour" x1="50" y1="50" x2="50" y2="27" stroke="#381005" stroke-width="4.5" stroke-linecap="round"/>
-        <line id="clockMinute" x1="50" y1="50" x2="50" y2="18" stroke="#522927" stroke-width="3" stroke-linecap="round"/>
-        <line id="clockSecond" x1="50" y1="56" x2="50" y2="14" stroke="#d61f1f" stroke-width="1.8" stroke-linecap="round"/>
-        <!-- 中心軸心 -->
-        <circle cx="50" cy="50" r="3.5" fill="#381005"/>
-      </svg>
-    </div>
+    <!-- 整合家具舞台：將時鐘、開關、茶几與書櫃綁定在同一個座標系，手機上自動等比例縮放，絕不重疊 -->
+    <div id="furnitureStage" class="furniture-stage">
 
-    <!-- 牆壁電燈開關 (點一下切換關燈夜讀模式) -->
-    <button id="wallSwitchBtn" class="wall-switch" title="牆壁電燈開關">
-      <div class="w-1 h-1 rounded-full bg-neutral-400 mb-1"></div>
-      <div class="switch-rocker"></div>
-      <div class="w-1 h-1 rounded-full bg-neutral-400 mt-1"></div>
-    </button>
-
-    <!-- 電燈開關正下方的「円」字型小茶几 + 熱可可馬克杯 -->
-    <div class="side-table-group">
-      <!-- 放在茶几上的熱可可馬克杯 (放大尺寸以符合書本與玩偶比例) -->
-      <div id="decor-mug" class="decor-item -mb-1.5 z-10" title="熱可可馬克杯">
-        <svg width="62" height="65" viewBox="0 0 44 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- 熱氣 -->
-          <path class="steam-line" d="M15 14 C13 10 17 7 15 3" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
-          <path class="steam-line-delay" d="M23 13 C21 9 25 6 23 2" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
-          <!-- 杯把 -->
-          <path d="M30 24 H35 C38 24 39 27 39 30 C39 33 38 36 35 36 H30" stroke="#e05a47" stroke-width="3.5" stroke-linecap="round"/>
-          <!-- 杯身 -->
-          <rect x="8" y="19" width="23" height="25" rx="3" fill="#ff7661" stroke="#9e2f20" stroke-width="2.2"/>
-          <ellipse cx="19.5" cy="20" rx="10.5" ry="2.5" fill="#5c2c0c"/>
-          <!-- 杯身小愛心 -->
-          <circle cx="19.5" cy="31" r="3" fill="#fff3e6"/>
+      <!-- 牆壁同步指針時鐘 (與使用者系統時間即時同步) -->
+      <div id="wallClock" class="wall-clock" title="點擊查看現在時間">
+        <svg id="clockSvg" width="100%" height="100%" viewBox="0 0 100 100">
+          <!-- 12 個整點刻度 -->
+          <line x1="50" y1="8" x2="50" y2="15" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="92" y1="50" x2="85" y2="50" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="50" y1="92" x2="50" y2="85" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="8" y1="50" x2="15" y2="50" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
+          <circle cx="71" cy="14" r="1.8" fill="#7d4406"/>
+          <circle cx="86" cy="29" r="1.8" fill="#7d4406"/>
+          <circle cx="86" cy="71" r="1.8" fill="#7d4406"/>
+          <circle cx="71" cy="86" r="1.8" fill="#7d4406"/>
+          <circle cx="29" cy="86" r="1.8" fill="#7d4406"/>
+          <circle cx="14" cy="71" r="1.8" fill="#7d4406"/>
+          <circle cx="14" cy="29" r="1.8" fill="#7d4406"/>
+          <circle cx="29" cy="14" r="1.8" fill="#7d4406"/>
+          <!-- 時針、分針、秒針 -->
+          <line id="clockHour" x1="50" y1="50" x2="50" y2="27" stroke="#381005" stroke-width="4.5" stroke-linecap="round"/>
+          <line id="clockMinute" x1="50" y1="50" x2="50" y2="18" stroke="#522927" stroke-width="3" stroke-linecap="round"/>
+          <line id="clockSecond" x1="50" y1="56" x2="50" y2="14" stroke="#d61f1f" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- 中心軸心 -->
+          <circle cx="50" cy="50" r="3.5" fill="#381005"/>
         </svg>
       </div>
 
-      <!-- 長得像「円」字的小茶几 (放大至超過牆面踢腳板高度，與書櫃比例一致) -->
-      <svg width="118" height="172" viewBox="0 0 78 112" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-lg">
-        <!-- 「円」的門框結構：左桌腳 + 頂部桌面 + 右桌腳 -->
-        <path d="M9 112 V12 C9 7.5 12.5 4 17 4 H61 C65.5 4 69 7.5 69 12 V112" 
-              stroke="#381005" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/>
-        <!-- 桌面頂緣木頭高光線 (呼應書櫃層板質感) -->
-        <line x1="12" y1="1" x2="66" y2="1" stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
-        <!-- 「円」中間的橫向隔板 (一) -->
-        <rect x="13" y="46" width="52" height="9" fill="#381005"/>
-        <line x1="14" y1="46.5" x2="64" y2="46.5" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
-        <!-- 「円」中間的垂直小立柱 (丨) -->
-        <rect x="35" y="9" width="8" height="38" fill="#7d4406" stroke="#381005" stroke-width="2"/>
-      </svg>
-    </div>
+      <!-- 牆壁電燈開關 (點一下切換關燈夜讀模式) -->
+      <button id="wallSwitchBtn" class="wall-switch" title="牆壁電燈開關">
+        <div class="w-1 h-1 rounded-full bg-neutral-400 mb-1"></div>
+        <div class="switch-rocker"></div>
+        <div class="w-1 h-1 rounded-full bg-neutral-400 mt-1"></div>
+      </button>
 
-    <!-- 中央書櫃定位容器：書櫃固定置中，說明框以絕對定位懸浮在右側，完全不會讓書櫃浮起或位移 -->
-    <div class="relative z-20 flex justify-center items-end w-full max-w-5xl mx-auto">
+      <!-- 電燈開關正下方的「円」字型小茶几 + 熱可可馬克杯 -->
+      <div class="side-table-group">
+        <!-- 放在茶几上的熱可可馬克杯 (放大尺寸以符合書本與玩偶比例) -->
+        <div id="decor-mug" class="decor-item -mb-1.5 z-10" title="熱可可馬克杯">
+          <svg width="62" height="65" viewBox="0 0 44 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- 熱氣 -->
+            <path class="steam-line" d="M15 14 C13 10 17 7 15 3" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+            <path class="steam-line-delay" d="M23 13 C21 9 25 6 23 2" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+            <!-- 杯把 -->
+            <path d="M30 24 H35 C38 24 39 27 39 30 C39 33 38 36 35 36 H30" stroke="#e05a47" stroke-width="3.5" stroke-linecap="round"/>
+            <!-- 杯身 -->
+            <rect x="8" y="19" width="23" height="25" rx="3" fill="#ff7661" stroke="#9e2f20" stroke-width="2.2"/>
+            <ellipse cx="19.5" cy="20" rx="10.5" ry="2.5" fill="#5c2c0c"/>
+            <!-- 杯身小愛心 -->
+            <circle cx="19.5" cy="31" r="3" fill="#fff3e6"/>
+          </svg>
+        </div>
+
+        <!-- 長得像「円」字的小茶几 (放大至超過牆面踢腳板高度，與書櫃比例一致) -->
+        <svg width="118" height="172" viewBox="0 0 78 112" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-lg">
+          <!-- 「円」的門框結構：左桌腳 + 頂部桌面 + 右桌腳 -->
+          <path d="M9 112 V12 C9 7.5 12.5 4 17 4 H61 C65.5 4 69 7.5 69 12 V112" 
+                stroke="#381005" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/>
+          <!-- 桌面頂緣木頭高光線 (呼應書櫃層板質感) -->
+          <line x1="12" y1="1" x2="66" y2="1" stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
+          <!-- 「円」中間的橫向隔板 (一) -->
+          <rect x="13" y="46" width="52" height="9" fill="#381005"/>
+          <line x1="14" y1="46.5" x2="64" y2="46.5" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
+          <!-- 「円」中間的垂直小立柱 (丨) -->
+          <rect x="35" y="9" width="8" height="38" fill="#7d4406" stroke="#381005" stroke-width="2"/>
+        </svg>
+      </div>
 
       <!-- ==========================================
            核心四層木書櫃 (由 JS 自動根據陣列渲染)
@@ -520,7 +479,7 @@
            採用絕對定位，不佔排版空間，書櫃穩穩站在地板上
            ========================================== -->
       <div id="calloutBox" 
-           class="callout-card callout-hidden fixed lg:absolute top-16 lg:top-6 left-1/2 -translate-x-1/2 lg:translate-x-0 lg:left-[calc(50%+225px)] w-64 sm:w-72 lg:w-64 p-4 rounded-sm">
+           class="callout-card callout-hidden fixed lg:absolute top-16 lg:top-16 left-1/2 -translate-x-1/2 lg:translate-x-0 lg:left-[525px] w-64 sm:w-72 lg:w-64 p-4 rounded-sm">
         <!-- 遊戲標題 -->
         <h2 id="infoTitle" class="text-xl font-black text-center text-neutral-800 tracking-wide">
           猜數字
@@ -1134,8 +1093,23 @@
       if (soundOn) playPopSound(520, 0.06);
     });
 
-    // 當視窗縮放或滾動時，若正在顯示說明框則即時更新折線座標
+    // 動態計算手機螢幕寬度，將整組家具舞台（時鐘+開關+茶几+書櫃）等比例縮放，確保完全不重疊
+    function fitStageToScreen() {
+      const stage = document.getElementById('furnitureStage');
+      if (!stage) return;
+      const vw = window.innerWidth;
+      const stageWidth = 500; // 舞台基準總寬度
+      if (vw < stageWidth + 24) {
+        const scale = Math.max(0.55, (vw - 16) / stageWidth);
+        stage.style.transform = `scale(${scale})`;
+      } else {
+        stage.style.transform = 'scale(1)';
+      }
+    }
+
+    // 當視窗縮放或滾動時，即時更新舞台縮放比例與折線座標
     window.addEventListener('resize', () => {
+      fitStageToScreen();
       if (hoveredGameId) updateLeaderLine();
     });
     window.addEventListener('scroll', () => {
@@ -1145,6 +1119,7 @@
     // 初始化啟動
     window.addEventListener('DOMContentLoaded', () => {
       renderBookcase();
+      fitStageToScreen();
       updateWallClock();
       setInterval(updateWallClock, 1000);
     });
