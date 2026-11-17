@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+  <script data-goatcounter="https://bear0945.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>我的遊戲書櫃 | Personal Game Bookshelf</title>
@@ -204,11 +206,11 @@
     /* 小貓尾巴搖擺動畫 */
     @keyframes tailWag {
       0%, 100% { transform: rotate(0deg); }
-      50% { transform: rotate(10deg); }
+      50% { transform: rotate(8deg); }
     }
     .cat-tail {
-      transform-origin: 82px 52px;
-      animation: tailWag 3s ease-in-out infinite;
+      transform-origin: 94px 60px;
+      animation: tailWag 3.2s ease-in-out infinite;
     }
 
     /* 牆壁指針時鐘 (固定於舞台左上方，與書櫃保持安全距離) */
@@ -437,31 +439,39 @@
            核心四層木書櫃 (由 JS 自動根據陣列渲染)
            ========================================== -->
       <div id="bookcaseContainer" class="bookcase shrink-0">
-        <!-- 書櫃頂端擺飾：放大版「饅頭型」打盹小橘貓 -->
-        <div class="absolute bottom-full left-0 right-0 flex justify-end items-end px-6 pointer-events-none">
-          <div id="decor-cat" class="decor-item pointer-events-auto" title="打盹的饅頭小橘貓">
-            <svg width="108" height="64" viewBox="0 0 112 66" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <!-- 搖擺的尾巴 -->
-              <path class="cat-tail" d="M82 52 C98 51 106 39 100 30 C97 26 91 29 93 34" stroke="#d97724" stroke-width="7.5" stroke-linecap="round"/>
-              <!-- 圓滾滾飽滿的「饅頭型」身體 (底部平貼書櫃頂面，上半部圓潤隆起) -->
-              <path d="M16 62 C16 34 34 22 56 22 C78 22 92 34 92 62 Z" fill="#f59b42" stroke="#783806" stroke-width="2.6" stroke-linejoin="round"/>
-              <!-- 饅頭背上的三道虎斑條紋 -->
-              <path d="M52 23 V32 M60 23 V33 M68 25 V33" stroke="#c96514" stroke-width="3.2" stroke-linecap="round"/>
-              <!-- 圓臉貓頭 (自然融入饅頭前方) -->
-              <ellipse cx="32" cy="43" rx="18" ry="16" fill="#f59b42" stroke="#783806" stroke-width="2.6"/>
-              <!-- 左右尖耳朵 -->
-              <path d="M17 33 L18 16 L29 27 Z" fill="#f59b42" stroke="#783806" stroke-width="2.6" stroke-linejoin="round"/>
-              <path d="M35 27 L46 16 L47 33 Z" fill="#f59b42" stroke="#783806" stroke-width="2.6" stroke-linejoin="round"/>
-              <!-- 閉著的彎彎睡眼 -->
-              <path d="M23 41 Q26.5 44.5 30 41" stroke="#4a2103" stroke-width="2.4" stroke-linecap="round"/>
-              <path d="M35 41 Q38.5 44.5 42 41" stroke="#4a2103" stroke-width="2.4" stroke-linecap="round"/>
-              <!-- 小粉鼻、貓嘴與腮紅 -->
-              <circle cx="32.5" cy="46" r="2" fill="#ff7a85"/>
-              <path d="M29.5 48.5 Q32.5 51 35.5 48.5" stroke="#4a2103" stroke-width="1.8" stroke-linecap="round"/>
-              <ellipse cx="22" cy="46" rx="3" ry="1.8" fill="#ff9aa2" opacity="0.85"/>
-              <ellipse cx="43" cy="46" rx="3" ry="1.8" fill="#ff9aa2" opacity="0.85"/>
-              <!-- 揣在身下的前爪小肉球線條 -->
-              <path d="M25 60 Q32 56 39 60" stroke="#783806" stroke-width="2" stroke-linecap="round"/>
+        <!-- 書櫃頂端擺飾：柔和手繪風打盹小橘貓 (與泰迪熊同款暖褐手繪描邊) -->
+        <div class="absolute bottom-full left-0 right-0 flex justify-end items-end px-5 -mb-[2px] pointer-events-none">
+          <div id="decor-cat" class="decor-item pointer-events-auto" title="打盹的小橘貓">
+            <svg width="116" height="68" viewBox="0 0 124 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 帶白尖與手繪描邊的搖擺尾巴 -->
+              <g class="cat-tail">
+                <path d="M94 60 C108 60 116 49 111 41 C107 35 100 38 102 44" stroke="#5c2c0c" stroke-width="13" stroke-linecap="round"/>
+                <path d="M94 60 C108 60 116 49 111 41 C107 35 100 38 102 44" stroke="#f59b42" stroke-width="8" stroke-linecap="round"/>
+                <path d="M107 38 C103 36 100 39 102 44" stroke="#fff4e6" stroke-width="7.5" stroke-linecap="round"/>
+              </g>
+              <!-- 頭身一體成形的軟綿綿趴睡輪廓 (消除幾何拼接線條) -->
+              <path d="M18 68 C11 66 10 50 18 40 C15 28 19 20 24 20 C28 20 31 26 33 31 Q39 29.5 45 31 C47 26 50 20 54 20 C59 20 63 28 59 39 C77 32 101 40 102 63 C102 67 97 68 92 68 Z" 
+                    fill="#f59b42" stroke="#5c2c0c" stroke-width="2.6" stroke-linejoin="round"/>
+              <!-- 粉嫩內耳 -->
+              <path d="M21 31 C20 25 22 23 24 23 C26 23 28 26 29 31 Z" fill="#f7b29c"/>
+              <path d="M49 31 C50 26 52 23 54 23 C56 23 58 25 57 31 Z" fill="#f7b29c"/>
+              <!-- 額頭與背部的微彎虎斑條紋 -->
+              <path d="M36 31 Q37 35 36.5 37 M39.5 30.5 Q40 35 39.5 37.5 M43 31 Q42.5 35 42 37" stroke="#c96514" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M68 37 Q70 43 68 47 M76 38 Q78 44 76 48 M84 41 Q86 47 84 51" stroke="#c96514" stroke-width="3" stroke-linecap="round"/>
+              <!-- 彎彎睡眼 -->
+              <path d="M25 46 Q29 49.5 33 46" stroke="#4a2103" stroke-width="2.3" stroke-linecap="round"/>
+              <path d="M45 46 Q49 49.5 53 46" stroke="#4a2103" stroke-width="2.3" stroke-linecap="round"/>
+              <!-- 小粉鼻與 ω 貓嘴 -->
+              <ellipse cx="39" cy="50" rx="2.3" ry="1.6" fill="#ff7a85"/>
+              <path d="M35 52.5 Q37 55 39 52.5 Q41 55 43 52.5" stroke="#4a2103" stroke-width="1.9" stroke-linecap="round" fill="none"/>
+              <!-- 腮紅與小鬍鬚 -->
+              <ellipse cx="23" cy="50" rx="3.4" ry="2" fill="#ff9aa2" opacity="0.8"/>
+              <ellipse cx="55" cy="50" rx="3.4" ry="2" fill="#ff9aa2" opacity="0.8"/>
+              <path d="M16 48 L8 46.5 M16 52 L8 53.5" stroke="#5c2c0c" stroke-width="1.7" stroke-linecap="round"/>
+              <path d="M62 48 L70 46.5 M62 52 L70 53.5" stroke="#5c2c0c" stroke-width="1.7" stroke-linecap="round"/>
+              <!-- 揣在下巴底下的白手套小肉球 -->
+              <path d="M25 68 C25 62.5 34 62.5 35 68 Z" fill="#fff6eb" stroke="#5c2c0c" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M43 68 C44 62.5 53 62.5 53 68 Z" fill="#fff6eb" stroke="#5c2c0c" stroke-width="2" stroke-linejoin="round"/>
             </svg>
           </div>
         </div>
