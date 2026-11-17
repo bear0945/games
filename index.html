@@ -602,13 +602,12 @@
           title: "打磚塊",
           desc: "放空大腦的休閒遊戲",
           url: BASE_URL + "tower_defense_breakoutV60.html",
-          color: "#302a26",   // 黑褐色高書
+          color: "#302a26",   // 黑褐色高書 (刪減為 3 本)
           labelType: "thin",
           books: [
             { w: 32, h: 105 },
             { w: 32, h: 103 },
-            { w: 32, h: 106 },
-            { w: 32, h: 102 }
+            { w: 32, h: 106 }
           ]
         },
         {
@@ -617,12 +616,24 @@
           title: "飛行棋",
           desc: "可自己跟電腦玩 也可四位玩家玩(本地)",
           url: BASE_URL + "ludo.html",
-          color: "#f2741f",   // 亮橘色矮書 (中間雙白線寬書)
+          color: "#f2741f",   // 亮橘色矮書 (刪減為 2 本，保留雙白線寬書)
           labelType: "thin",
           books: [
             { w: 30, h: 78 },
-            { w: 54, h: 80, doubleLine: true },
-            { w: 30, h: 77 }
+            { w: 54, h: 80, doubleLine: true }
+          ]
+        },
+        {
+          id: "15-puzzle",
+          type: "game",
+          title: "數字華容道",
+          desc: "經典 15 數字推盤拼圖遊戲",
+          url: BASE_URL + "15puzzle.html",
+          color: "#FF9999",   // 粉紅色書皮 (新增 2 本)
+          labelType: "thin",
+          books: [
+            { w: 32, h: 92 },
+            { w: 32, h: 94 }
           ]
         }
       ],
