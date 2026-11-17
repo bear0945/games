@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <script data-goatcounter="https://bear0945.goatcounter.com/count"
-        async src="//gc.zgo.at/count.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>我的遊戲書櫃 | Personal Game Bookshelf</title>
@@ -207,6 +205,132 @@
       animation: flowerWiggle 0.55s ease-in-out;
     }
 
+    /* 熱可可飄煙動畫 */
+    @keyframes steamFloat {
+      0%, 100% { transform: translateY(0) scaleY(1); opacity: 0.7; }
+      50% { transform: translateY(-4px) scaleY(1.15); opacity: 0.25; }
+    }
+    .steam-line {
+      animation: steamFloat 2.4s ease-in-out infinite;
+    }
+    .steam-line-delay {
+      animation: steamFloat 2.4s ease-in-out 1.2s infinite;
+    }
+
+    /* 小貓尾巴搖擺動畫 */
+    @keyframes tailWag {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(10deg); }
+    }
+    .cat-tail {
+      transform-origin: 82px 52px;
+      animation: tailWag 3s ease-in-out infinite;
+    }
+
+    /* 牆壁指針時鐘 */
+    .wall-clock {
+      position: absolute;
+      left: max(14px, calc(50% - 268px));
+      bottom: 410px;
+      z-index: 36;
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background-color: #fffdf8;
+      border: 5px solid var(--cabinet-frame);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2), inset 0 2px 5px rgba(0, 0, 0, 0.12);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .wall-clock:hover {
+      transform: scale(1.06);
+    }
+
+    /* 牆壁電燈開關 */
+    .wall-switch {
+      position: absolute;
+      left: max(31px, calc(50% - 251px));
+      bottom: 315px;
+      z-index: 38;
+      width: 34px;
+      height: 52px;
+      background-color: #fffdf9;
+      border: 3px solid #d6c5b3;
+      border-radius: 4px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    .wall-switch:active {
+      transform: scale(0.94);
+    }
+
+    /* 「円」字型小茶几與馬克杯組合 (站在粉紅地板上，位於電燈開關正下方) */
+    .side-table-group {
+      position: absolute;
+      left: max(10px, calc(50% - 272px));
+      bottom: 50px; /* 與書櫃同樣站在地板高度 */
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform-origin: bottom left;
+    }
+
+    /* 手機窄螢幕自適應縮放，確保時鐘、茶几與書櫃互不重疊 */
+    @media (max-width: 540px) {
+      .bookcase {
+        transform: scale(0.76);
+      }
+      .side-table-group {
+        left: 6px;
+        transform: scale(0.76);
+      }
+      .wall-switch {
+        left: 22px;
+        bottom: 270px;
+        transform: scale(0.88);
+      }
+      .wall-clock {
+        left: 10px;
+        bottom: 350px;
+        width: 58px;
+        height: 58px;
+      }
+    }
+
+    /* 關燈模式的聚光燈遮罩 */
+    #darkRoomOverlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 35;
+      background: radial-gradient(circle at 50% 62%, rgba(15, 10, 5, 0.12) 0%, rgba(12, 8, 5, 0.78) 58%, rgba(5, 3, 2, 0.92) 100%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    body.lights-off #darkRoomOverlay {
+      opacity: 1;
+    }
+    .switch-rocker {
+      width: 14px;
+      height: 24px;
+      background-color: #f0e6d8;
+      border: 1.5px solid #b8a590;
+      border-radius: 2px;
+      position: relative;
+      box-shadow: inset 0 -3px 2px rgba(0,0,0,0.15);
+      transition: all 0.15s ease;
+    }
+    body.lights-off .switch-rocker {
+      background-color: #e3d5c3;
+      box-shadow: inset 0 3px 2px rgba(0,0,0,0.2);
+    }
+
     /* 右側說明白框：改為絕對定位/懸浮顯示，完全不推擠書櫃高度 */
     .callout-card {
       background-color: #ffffff;
@@ -279,6 +403,71 @@
   <!-- 房間主舞台 -->
   <div class="room-scene pt-16 px-4">
 
+    <!-- 牆壁同步指針時鐘 (與使用者系統時間即時同步) -->
+    <div id="wallClock" class="wall-clock" title="點擊查看現在時間">
+      <svg id="clockSvg" width="100%" height="100%" viewBox="0 0 100 100">
+        <!-- 12 個整點刻度 -->
+        <line x1="50" y1="8" x2="50" y2="15" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="92" y1="50" x2="85" y2="50" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="50" y1="92" x2="50" y2="85" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="8" y1="50" x2="15" y2="50" stroke="#381005" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="71" cy="14" r="1.8" fill="#7d4406"/>
+        <circle cx="86" cy="29" r="1.8" fill="#7d4406"/>
+        <circle cx="86" cy="71" r="1.8" fill="#7d4406"/>
+        <circle cx="71" cy="86" r="1.8" fill="#7d4406"/>
+        <circle cx="29" cy="86" r="1.8" fill="#7d4406"/>
+        <circle cx="14" cy="71" r="1.8" fill="#7d4406"/>
+        <circle cx="14" cy="29" r="1.8" fill="#7d4406"/>
+        <circle cx="29" cy="14" r="1.8" fill="#7d4406"/>
+        <!-- 時針、分針、秒針 -->
+        <line id="clockHour" x1="50" y1="50" x2="50" y2="27" stroke="#381005" stroke-width="4.5" stroke-linecap="round"/>
+        <line id="clockMinute" x1="50" y1="50" x2="50" y2="18" stroke="#522927" stroke-width="3" stroke-linecap="round"/>
+        <line id="clockSecond" x1="50" y1="56" x2="50" y2="14" stroke="#d61f1f" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- 中心軸心 -->
+        <circle cx="50" cy="50" r="3.5" fill="#381005"/>
+      </svg>
+    </div>
+
+    <!-- 牆壁電燈開關 (點一下切換關燈夜讀模式) -->
+    <button id="wallSwitchBtn" class="wall-switch" title="牆壁電燈開關">
+      <div class="w-1 h-1 rounded-full bg-neutral-400 mb-1"></div>
+      <div class="switch-rocker"></div>
+      <div class="w-1 h-1 rounded-full bg-neutral-400 mt-1"></div>
+    </button>
+
+    <!-- 電燈開關正下方的「円」字型小茶几 + 熱可可馬克杯 -->
+    <div class="side-table-group">
+      <!-- 放在茶几上的熱可可馬克杯 -->
+      <div id="decor-mug" class="decor-item -mb-1 z-10" title="熱可可馬克杯">
+        <svg width="42" height="44" viewBox="0 0 44 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 熱氣 -->
+          <path class="steam-line" d="M15 14 C13 10 17 7 15 3" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+          <path class="steam-line-delay" d="M23 13 C21 9 25 6 23 2" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+          <!-- 杯把 -->
+          <path d="M30 24 H35 C38 24 39 27 39 30 C39 33 38 36 35 36 H30" stroke="#e05a47" stroke-width="3.5" stroke-linecap="round"/>
+          <!-- 杯身 -->
+          <rect x="8" y="19" width="23" height="25" rx="3" fill="#ff7661" stroke="#9e2f20" stroke-width="2.2"/>
+          <ellipse cx="19.5" cy="20" rx="10.5" ry="2.5" fill="#5c2c0c"/>
+          <!-- 杯身小愛心 -->
+          <circle cx="19.5" cy="31" r="3" fill="#fff3e6"/>
+        </svg>
+      </div>
+
+      <!-- 長得像「円」字的小茶几 (與書櫃同色系木頭質感) -->
+      <svg width="78" height="112" viewBox="0 0 78 112" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-md">
+        <!-- 「円」的門框結構：左桌腳 + 頂部桌面 + 右桌腳 -->
+        <path d="M9 112 V12 C9 7.5 12.5 4 17 4 H61 C65.5 4 69 7.5 69 12 V112" 
+              stroke="#381005" stroke-width="11" stroke-linecap="butt" stroke-linejoin="round"/>
+        <!-- 桌面頂緣木頭高光線 (呼應書櫃層板質感) -->
+        <line x1="12" y1="1" x2="66" y2="1" stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
+        <!-- 「円」中間的橫向隔板 (一) -->
+        <rect x="13" y="46" width="52" height="9" fill="#381005"/>
+        <line x1="14" y1="46.5" x2="64" y2="46.5" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
+        <!-- 「円」中間的垂直小立柱 (丨) -->
+        <rect x="35" y="9" width="8" height="38" fill="#7d4406" stroke="#381005" stroke-width="2"/>
+      </svg>
+    </div>
+
     <!-- 中央書櫃定位容器：書櫃固定置中，說明框以絕對定位懸浮在右側，完全不會讓書櫃浮起或位移 -->
     <div class="relative z-20 flex justify-center items-end w-full max-w-5xl mx-auto">
 
@@ -286,6 +475,35 @@
            核心四層木書櫃 (由 JS 自動根據陣列渲染)
            ========================================== -->
       <div id="bookcaseContainer" class="bookcase shrink-0">
+        <!-- 書櫃頂端擺飾：放大版「饅頭型」打盹小橘貓 -->
+        <div class="absolute bottom-full left-0 right-0 flex justify-end items-end px-6 pointer-events-none">
+          <div id="decor-cat" class="decor-item pointer-events-auto" title="打盹的饅頭小橘貓">
+            <svg width="108" height="64" viewBox="0 0 112 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 搖擺的尾巴 -->
+              <path class="cat-tail" d="M82 52 C98 51 106 39 100 30 C97 26 91 29 93 34" stroke="#d97724" stroke-width="7.5" stroke-linecap="round"/>
+              <!-- 圓滾滾飽滿的「饅頭型」身體 (底部平貼書櫃頂面，上半部圓潤隆起) -->
+              <path d="M16 62 C16 34 34 22 56 22 C78 22 92 34 92 62 Z" fill="#f59b42" stroke="#783806" stroke-width="2.6" stroke-linejoin="round"/>
+              <!-- 饅頭背上的三道虎斑條紋 -->
+              <path d="M52 23 V32 M60 23 V33 M68 25 V33" stroke="#c96514" stroke-width="3.2" stroke-linecap="round"/>
+              <!-- 圓臉貓頭 (自然融入饅頭前方) -->
+              <ellipse cx="32" cy="43" rx="18" ry="16" fill="#f59b42" stroke="#783806" stroke-width="2.6"/>
+              <!-- 左右尖耳朵 -->
+              <path d="M17 33 L18 16 L29 27 Z" fill="#f59b42" stroke="#783806" stroke-width="2.6" stroke-linejoin="round"/>
+              <path d="M35 27 L46 16 L47 33 Z" fill="#f59b42" stroke="#783806" stroke-width="2.6" stroke-linejoin="round"/>
+              <!-- 閉著的彎彎睡眼 -->
+              <path d="M23 41 Q26.5 44.5 30 41" stroke="#4a2103" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M35 41 Q38.5 44.5 42 41" stroke="#4a2103" stroke-width="2.4" stroke-linecap="round"/>
+              <!-- 小粉鼻、貓嘴與腮紅 -->
+              <circle cx="32.5" cy="46" r="2" fill="#ff7a85"/>
+              <path d="M29.5 48.5 Q32.5 51 35.5 48.5" stroke="#4a2103" stroke-width="1.8" stroke-linecap="round"/>
+              <ellipse cx="22" cy="46" rx="3" ry="1.8" fill="#ff9aa2" opacity="0.85"/>
+              <ellipse cx="43" cy="46" rx="3" ry="1.8" fill="#ff9aa2" opacity="0.85"/>
+              <!-- 揣在身下的前爪小肉球線條 -->
+              <path d="M25 60 Q32 56 39 60" stroke="#783806" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
         <!-- 右側裝飾小木栓 (草圖細節) -->
         <div class="cabinet-peg" style="top: 132px;"></div>
         <div class="cabinet-peg" style="top: 264px;"></div>
@@ -323,6 +541,9 @@
     <div class="wall-baseboard"></div>
     <div class="room-floor"></div>
   </div>
+
+  <!-- 深夜關燈模式聚光燈遮罩 -->
+  <div id="darkRoomOverlay"></div>
 
   <!-- 吐司訊息通知 -->
   <div id="toastMsg" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-neutral-900/90 text-white text-xs sm:text-sm px-4 py-2.5 rounded-full shadow-xl pointer-events-none opacity-0 transition-all duration-300">
@@ -668,27 +889,124 @@
 
       // 鬱金香點擊效果
       const flowerPot = document.getElementById('decor-tulip');
+      let tulipClicks = 0;
       if (flowerPot) {
         flowerPot.addEventListener('click', () => {
-          playPopSound(680, 0.1);
-          flowerPot.classList.remove('wiggling');
-          void flowerPot.offsetWidth;
-          flowerPot.classList.add('wiggling');
-          showToast("🌷 小鬱金香朝你點了點頭！");
+          tulipClicks++;
+          playPopSound(680 + Math.min(tulipClicks * 20, 200), 0.1);
+          triggerWiggle(flowerPot);
+          if (tulipClicks === 1) {
+            showToast("🌷 小鬱金香朝你點了點頭！");
+          } else if (tulipClicks === 5) {
+            showToast("🌿 澆水太多啦，鬱金香已經精神百倍了！");
+          } else {
+            showToast(`🌷 鬱金香開心地搖擺中（已互動 ${tulipClicks} 次）`);
+          }
         });
       }
 
-      // 泰迪熊點擊效果
+      // 泰迪熊點擊效果 (支援多次點擊彩蛋)
       const teddyBear = document.getElementById('decor-teddy');
+      let teddyClicks = 0;
       if (teddyBear) {
         teddyBear.addEventListener('click', () => {
+          teddyClicks++;
           playPopSound(420, 0.12);
-          teddyBear.classList.remove('wiggling');
-          void teddyBear.offsetWidth;
-          teddyBear.classList.add('wiggling');
-          showToast("🧸 泰迪熊開心地晃了晃耳朵！");
+          triggerWiggle(teddyBear);
+          if (teddyClicks === 1) {
+            showToast("🧸 泰迪熊開心地晃了晃耳朵！");
+          } else if (teddyClicks === 3) {
+            showToast("🧸 泰迪熊：「今天想玩哪一本書呢？」");
+          } else if (teddyClicks === 5) {
+            showToast("😵‍💫 泰迪熊被你戳了 5 下，頭都有點暈啦！");
+          } else if (teddyClicks >= 10) {
+            showToast(`🏆 泰迪熊忠實粉絲達成！（已戳了 ${teddyClicks} 下）`);
+          } else {
+            showToast(`🧸 泰迪熊搖搖頭（已戳 ${teddyClicks} 下）`);
+          }
         });
       }
+
+      // 書櫃頂端：打盹小橘貓點擊效果
+      const catEl = document.getElementById('decor-cat');
+      let catClicks = 0;
+      if (catEl) {
+        catEl.addEventListener('click', () => {
+          catClicks++;
+          // 模擬可愛的貓叫滑音
+          playPopSound(760, 0.14);
+          setTimeout(() => playPopSound(620, 0.16), 90);
+          triggerWiggle(catEl);
+          if (catClicks === 1) {
+            showToast("🐱 喵嗚～小橘貓翻了個身繼續打盹");
+          } else if (catClicks === 4) {
+            showToast("💤 呼嚕呼嚕...這隻貓已經進入深度放空模式");
+          } else {
+            showToast(`🐾 摸了小橘貓第 ${catClicks} 下，呼嚕聲變大了！`);
+          }
+        });
+      }
+
+      // 書櫃頂端：熱可可馬克杯點擊效果
+      const mugEl = document.getElementById('decor-mug');
+      if (mugEl) {
+        mugEl.addEventListener('click', () => {
+          playPopSound(880, 0.08);
+          triggerWiggle(mugEl);
+          showToast("☕ 喝一口熱可可，休息一下再玩吧！");
+        });
+      }
+
+      // 牆壁電燈開關：切換深夜關燈聚光燈模式
+      const switchBtn = document.getElementById('wallSwitchBtn');
+      if (switchBtn) {
+        switchBtn.addEventListener('click', () => {
+          const isDark = document.body.classList.toggle('lights-off');
+          playPopSound(isDark ? 260 : 520, 0.05);
+          showToast(isDark ? "🌙 已關燈：開啟深夜專注玩遊戲模式" : "☀️ 已開燈：房間恢復明亮！");
+        });
+      }
+
+      // 牆壁指針時鐘點擊：報時並發出滴答聲
+      const clockEl = document.getElementById('wallClock');
+      if (clockEl) {
+        clockEl.addEventListener('click', () => {
+          playPopSound(920, 0.05);
+          setTimeout(() => playPopSound(740, 0.05), 110);
+          const now = new Date();
+          const hh = String(now.getHours()).padStart(2, '0');
+          const mm = String(now.getMinutes()).padStart(2, '0');
+          const ss = String(now.getSeconds()).padStart(2, '0');
+          showToast(`🕒 現在時間是 ${hh}:${mm}:${ss}`);
+        });
+      }
+    }
+
+    // 即時同步使用者系統時間，更新時針、分針、秒針角度
+    function updateWallClock() {
+      const hourHand = document.getElementById('clockHour');
+      const minHand = document.getElementById('clockMinute');
+      const secHand = document.getElementById('clockSecond');
+      if (!hourHand || !minHand || !secHand) return;
+
+      const now = new Date();
+      const seconds = now.getSeconds();
+      const minutes = now.getMinutes();
+      const hours = now.getHours() % 12;
+
+      const secDeg = seconds * 6;
+      const minDeg = minutes * 6 + seconds * 0.1;
+      const hourDeg = hours * 30 + minutes * 0.5;
+
+      secHand.setAttribute('transform', `rotate(${secDeg} 50 50)`);
+      minHand.setAttribute('transform', `rotate(${minDeg} 50 50)`);
+      hourHand.setAttribute('transform', `rotate(${hourDeg} 50 50)`);
+    }
+
+    function triggerWiggle(el) {
+      el.classList.remove('wiggling');
+      void el.offsetWidth;
+      el.classList.add('wiggling');
     }
 
     // 根據 ID 找到對應的遊戲物件
@@ -813,6 +1131,8 @@
     // 初始化啟動
     window.addEventListener('DOMContentLoaded', () => {
       renderBookcase();
+      updateWallClock();
+      setInterval(updateWallClock, 1000);
     });
   </script>
 </body>
