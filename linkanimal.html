@@ -19,6 +19,8 @@
             user-select: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
         body {
@@ -139,8 +141,9 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease, background 0.15s ease;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
             overflow: hidden;
+            contain: layout style paint;
         }
 
         @media (max-width: 768px) {
@@ -189,20 +192,23 @@
             background: linear-gradient(180deg, #fecaca 0%, #f87171 100%);
         }
 
-        /* Emoji 大小自適應：跨平台統一使用 Q 版 SVG 圖庫，並加上卡通貼紙風深色描邊，讓白色系動物輪廓超清晰 */
+        /* 消除動畫 */
+        .mahjong-tile.matched {
+            animation: popOut 0.24s ease-out forwards;
+            pointer-events: none;
+        }
+
+        /* Emoji 大小自適應：針對 iPad WebKit 輕量化貼紙描邊，兼顧清晰度與高幀率流暢感 */
         .tile-emoji {
             font-family: 'Noto Color Emoji', sans-serif;
             font-size: clamp(1.15rem, 3.2vw, 2.45rem);
             line-height: 1;
             width: 78%;
             height: 78%;
-            /* 4向貼紙描邊 + 立體底影，讓白色動物在淺色麻將上也有明顯邊界 */
+            /* 精簡為雙層高效能貼紙描邊，避免 iPad WebKit 重繪 144 張 SVG 時掉幀 */
             filter: 
-                drop-shadow(0.9px 0 0 rgba(51, 35, 22, 0.72))
-                drop-shadow(-0.9px 0 0 rgba(51, 35, 22, 0.72))
-                drop-shadow(0 0.9px 0 rgba(51, 35, 22, 0.72))
-                drop-shadow(0 -0.9px 0 rgba(51, 35, 22, 0.72))
-                drop-shadow(0 2px 2.5px rgba(0, 0, 0, 0.25));
+                drop-shadow(0 0 1.2px rgba(45, 25, 15, 0.9))
+                drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
             z-index: 2;
             display: flex;
             align-items: center;
@@ -306,7 +312,8 @@
 
         /* 立體遊戲按鈕 */
         .game-btn {
-            transition: all 0.15s ease;
+            touch-action: manipulation;
+            transition: transform 0.12s ease, filter 0.12s ease;
             box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
         }
         .game-btn:hover:not(:disabled) {
@@ -327,7 +334,7 @@
 
     <!-- 頂部狀態與控制列 -->
     <header class="w-full max-w-[1080px] mx-auto mb-2">
-        <div class="theme-panel border rounded-2xl p-2.5 sm:p-3.5 shadow-xl backdrop-blur-md transition-colors duration-300">
+        <div class="theme-panel border rounded-2xl p-2.5 sm:p-3.5 shadow-xl transition-colors duration-300">
             <!-- 第一排：標題、關卡選擇、工具按鈕 -->
             <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
                 <!-- 標題與關卡資訊 -->
@@ -621,9 +628,10 @@
         let soundEnabled = true;
         let isLightMode = false; // false = 🌙 深藍+深紫模式, true = ☀️ 粉紅+淺膚色模式
 
-        /**************************************************************
-         * 3. Web Audio 合成音效系統 (不依賴外部音檔)
-         **************************************************************/
+        // DOM 快取陣列：避免每次點擊整盤重建 DOM，大幅提升 iPad 觸控流暢度
+        let gridCellEls = [];
+        let renderedAnimalIds = [];
+        let lastHudSnapshot = {};
         let audioCtx = null;
 
         function getAudioContext() {
@@ -788,8 +796,9 @@
             // 確保開局一定有解
             ensureValidMovesOnBoard();
 
+            lastHudSnapshot = {};
             updateHUD();
-            renderBoard();
+            renderBoard(true);
             startTimer();
         }
 
@@ -835,9 +844,9 @@
         }
 
         /**************************************************************
-         * 5. 核心演算法：最多轉兩個彎 (3 條線段內) 路徑檢查
+         * 5. 核心連線演算法 (最多轉兩個彎 = 0、1、2 轉折)
          **************************************************************/
-        // 檢查 (r1, c1) 與 (r2, c2) 是否在同一條無障礙直線上 (不含起點與終點本身)
+        // 檢查同一行或同一列兩點之間是否全為空格 (不含端點本身)
         function isClearLine(r1, c1, r2, c2) {
             if (r1 === r2) {
                 const minC = Math.min(c1, c2);
@@ -1053,60 +1062,95 @@
         }
 
         /**************************************************************
-         * 7. 畫面渲染與閃電連線特效
+         * 7. 畫面渲染與閃電連線特效 (差異更新機制，零重建卡頓)
          **************************************************************/
-        function renderBoard() {
+        function initBoardGridDOM() {
             const gridEl = document.getElementById('board-grid');
             gridEl.innerHTML = '';
+            gridCellEls = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
+            renderedAnimalIds = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(-1));
 
+            const frag = document.createDocumentFragment();
             for (let r = 0; r < GRID_ROWS; r++) {
                 for (let c = 0; c < GRID_COLS; c++) {
                     const cellDiv = document.createElement('div');
                     cellDiv.dataset.r = r;
                     cellDiv.dataset.c = c;
-
-                    const animalId = board[r][c];
-                    if (animalId !== 0) {
-                        const tileBtn = document.createElement('div');
-                        tileBtn.className = 'mahjong-tile';
-                        tileBtn.id = `tile-${r}-${c}`;
-
-                        // 是否為選中或提示狀態
-                        if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
-                            tileBtn.classList.add('selected');
-                        }
-                        if (hintedCells.some(h => h.r === r && h.c === c)) {
-                            tileBtn.classList.add('hinted');
-                        }
-
-                        const animalItem = ANIMAL_CATALOG[animalId - 1];
-                        const emojiChar = animalItem.emoji;
-                        const bgTint = animalItem.bg;
-                        const barColor = animalItem.bar;
-                        const primarySvgUrl = getCuteEmojiSvgUrl(emojiChar, 'noto');
-                        const fallbackSvgUrl = getCuteEmojiSvgUrl(emojiChar, 'twemoji');
-
-                        // 移除左上角數字，強制載入跨平台統一的 Q 版高飽和全身 SVG 圖示，解決 iPad 圖案影薄問題
-                        tileBtn.style.background = `linear-gradient(180deg, #ffffff 0%, ${bgTint} 100%)`;
-                        tileBtn.innerHTML = `
-                            <div class="tile-corner-tint" style="background: radial-gradient(circle at center, ${barColor}, transparent 75%);"></div>
-                            <span class="tile-emoji" title="${animalItem.name}">
-                                <img src="${primarySvgUrl}" 
-                                     alt="${emojiChar}" 
-                                     class="tile-emoji-img" 
-                                     draggable="false"
-                                     onerror="if(this.src!=='${fallbackSvgUrl}'){this.src='${fallbackSvgUrl}';}else{this.parentElement.textContent='${emojiChar}';}" />
-                            </span>
-                            <div class="tile-accent-bar" style="background-color: ${barColor};"></div>
-                        `;
-
-                        tileBtn.addEventListener('click', () => onTileClick(r, c));
-                        cellDiv.appendChild(tileBtn);
-                    }
-
-                    gridEl.appendChild(cellDiv);
+                    gridCellEls[r][c] = cellDiv;
+                    frag.appendChild(cellDiv);
                 }
             }
+            gridEl.appendChild(frag);
+        }
+
+        // 局部更新選取與提示外框（不重新建立 144 張圖片 DOM，讓 iPad Brave 點擊零延遲）
+        function syncTileHighlights() {
+            for (let r = 1; r <= PLAY_ROWS; r++) {
+                for (let c = 1; c <= PLAY_COLS; c++) {
+                    const cellDiv = gridCellEls[r]?.[c];
+                    const tileBtn = cellDiv?.firstElementChild;
+                    if (!tileBtn) continue;
+
+                    const isSelected = Boolean(selectedCell && selectedCell.r === r && selectedCell.c === c);
+                    const isHinted = hintedCells.some(h => h.r === r && h.c === c);
+
+                    tileBtn.classList.toggle('selected', isSelected);
+                    tileBtn.classList.toggle('hinted', isHinted);
+                }
+            }
+        }
+
+        function renderBoard(forceRebuild = false) {
+            if (forceRebuild || gridCellEls.length === 0) {
+                initBoardGridDOM();
+            }
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const animalId = board[r][c];
+                    const cellDiv = gridCellEls[r][c];
+
+                    // 只有當該格子的動物種類真的改變時，才更新內部 DOM 與圖片
+                    if (renderedAnimalIds[r][c] !== animalId) {
+                        renderedAnimalIds[r][c] = animalId;
+                        cellDiv.innerHTML = '';
+
+                        if (animalId !== 0) {
+                            const tileBtn = document.createElement('div');
+                            tileBtn.className = 'mahjong-tile';
+                            tileBtn.id = `tile-${r}-${c}`;
+
+                            const animalItem = ANIMAL_CATALOG[animalId - 1];
+                            const emojiChar = animalItem.emoji;
+                            const bgTint = animalItem.bg;
+                            const barColor = animalItem.bar;
+                            const primarySvgUrl = getCuteEmojiSvgUrl(emojiChar, 'noto');
+                            const fallbackSvgUrl = getCuteEmojiSvgUrl(emojiChar, 'twemoji');
+
+                            // 強制載入跨平台統一的 Q 版高飽和全身 SVG 圖示
+                            tileBtn.style.background = `linear-gradient(180deg, #ffffff 0%, ${bgTint} 100%)`;
+                            tileBtn.innerHTML = `
+                                <div class="tile-corner-tint" style="background: radial-gradient(circle at center, ${barColor}, transparent 75%);"></div>
+                                <span class="tile-emoji" title="${animalItem.name}">
+                                    <img src="${primarySvgUrl}" 
+                                         alt="${emojiChar}" 
+                                         class="tile-emoji-img" 
+                                         decoding="async"
+                                         draggable="false"
+                                         onerror="if(this.src!=='${fallbackSvgUrl}'){this.src='${fallbackSvgUrl}';}else{this.parentElement.textContent='${emojiChar}';}" />
+                                </span>
+                                <div class="tile-accent-bar" style="background-color: ${barColor};"></div>
+                            `;
+
+                            tileBtn.addEventListener('click', () => onTileClick(r, c));
+                            cellDiv.appendChild(tileBtn);
+                        }
+                    }
+                }
+            }
+
+            // 選取與提示狀態直接透過 class 切換，不重繪圖片
+            syncTileHighlights();
         }
 
         // 在 SVG 上繪製閃電雷射連線 (對應 1800 x 1100 座標空間)
@@ -1135,11 +1179,11 @@
             if (isPaused || isAnimating) return;
             if (board[r][c] === 0) return;
 
-            // 點擊同一張牌：取消選取
+            // 點擊同一張牌：取消選取 (僅局部切換樣式，不重繪整盤)
             if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
                 selectedCell = null;
                 playSound('select');
-                renderBoard();
+                syncTileHighlights();
                 return;
             }
 
@@ -1147,7 +1191,7 @@
             if (!selectedCell) {
                 selectedCell = { r, c };
                 playSound('select');
-                renderBoard();
+                syncTileHighlights();
                 return;
             }
 
@@ -1155,11 +1199,11 @@
             const first = selectedCell;
             const second = { r, c };
 
-            // 若兩張牌圖案不同，直接將選取切換到新點擊的這張牌（符合原版流暢操作手感）
+            // 若兩張牌圖案不同，直接將選取切換到新點擊的這張牌
             if (board[first.r][first.c] !== board[second.r][second.c]) {
                 selectedCell = second;
                 playSound('select');
-                renderBoard();
+                syncTileHighlights();
                 return;
             }
 
@@ -1171,6 +1215,7 @@
                 isAnimating = true;
                 selectedCell = null;
                 hintedCells = [];
+                syncTileHighlights();
                 playSound('match');
                 drawLaserPath(path);
 
@@ -1200,12 +1245,14 @@
             } else {
                 // 圖案相同但轉彎超過 2 次：震動提示並改選第二張牌
                 playSound('error');
+                selectedCell = second;
+                syncTileHighlights();
                 const tile2El = document.getElementById(`tile-${second.r}-${second.c}`);
                 if (tile2El) {
+                    tile2El.classList.remove('shake');
+                    void tile2El.offsetWidth;
                     tile2El.classList.add('shake');
                 }
-                selectedCell = second;
-                setTimeout(() => renderBoard(), 220);
             }
         }
 
@@ -1249,7 +1296,7 @@
                 hintedCells = [pair.p1, pair.p2];
                 playSound('select');
                 updateHUD();
-                renderBoard();
+                syncTileHighlights();
             }
         }
 
@@ -1337,21 +1384,42 @@
 
         function updateHUD() {
             const cfg = LEVEL_CONFIGS[currentLevel];
-            document.getElementById('level-badge').textContent = `第 ${currentLevel} / 9 關`;
-            document.getElementById('level-rule-text').textContent = `移動規則：${cfg.name} — ${cfg.desc}`;
-            document.getElementById('remaining-count').textContent = remainingTiles;
-            document.getElementById('score-text').textContent = score;
-            document.getElementById('hint-count').textContent = hintsLeft;
-            document.getElementById('shuffle-count').textContent = shufflesLeft;
+            const formattedTime = isRelaxMode ? '∞' : formatTime(timeLeft);
+            const pct = isRelaxMode ? 100 : Math.max(0, Math.min(100, (timeLeft / MAX_TIME) * 100));
 
-            document.getElementById('hint-btn').disabled = hintsLeft <= 0;
-            document.getElementById('shuffle-btn').disabled = shufflesLeft <= 0;
-
+            if (lastHudSnapshot.level !== currentLevel) {
+                lastHudSnapshot.level = currentLevel;
+                document.getElementById('level-badge').textContent = `第 ${currentLevel} / 9 關`;
+                document.getElementById('level-rule-text').textContent = `移動規則：${cfg.name} — ${cfg.desc}`;
+            }
+            if (lastHudSnapshot.remaining !== remainingTiles) {
+                lastHudSnapshot.remaining = remainingTiles;
+                document.getElementById('remaining-count').textContent = remainingTiles;
+            }
+            if (lastHudSnapshot.score !== score) {
+                lastHudSnapshot.score = score;
+                document.getElementById('score-text').textContent = score;
+            }
+            if (lastHudSnapshot.hints !== hintsLeft) {
+                lastHudSnapshot.hints = hintsLeft;
+                document.getElementById('hint-count').textContent = hintsLeft;
+                document.getElementById('hint-btn').disabled = hintsLeft <= 0;
+            }
+            if (lastHudSnapshot.shuffles !== shufflesLeft) {
+                lastHudSnapshot.shuffles = shufflesLeft;
+                document.getElementById('shuffle-count').textContent = shufflesLeft;
+                document.getElementById('shuffle-btn').disabled = shufflesLeft <= 0;
+            }
             if (!isRelaxMode) {
-                const pct = Math.max(0, Math.min(100, (timeLeft / MAX_TIME) * 100));
-                document.getElementById('timer-bar').style.width = `${pct}%`;
-                const timerSec = document.getElementById('timer-seconds');
-                if (timerSec) timerSec.textContent = formatTime(timeLeft);
+                if (lastHudSnapshot.formattedTime !== formattedTime) {
+                    lastHudSnapshot.formattedTime = formattedTime;
+                    const timerSec = document.getElementById('timer-seconds');
+                    if (timerSec) timerSec.textContent = formattedTime;
+                }
+                if (lastHudSnapshot.pct !== pct) {
+                    lastHudSnapshot.pct = pct;
+                    document.getElementById('timer-bar').style.width = `${pct}%`;
+                }
             }
         }
 
