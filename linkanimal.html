@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>經典動物麻將連連看 (Onet 36 Animals)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --board-cols: 18;
+            --board-rows: 11;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            transition: background 0.35s ease, color 0.35s ease;
+        }
+
+        /* 🌙 深藍 + 深紫夜間模式 (預設) */
+        body.theme-dark {
+            background: radial-gradient(circle at center, #1e1b4b 0%, #3b0764 52%, #0f172a 100%);
+            color: #f8fafc;
+        }
+
+        /* ☀️ 粉紅 + 淺膚色日間模式 */
+        body.theme-light {
+            background: radial-gradient(circle at center, #fff5eb 0%, #fce7f3 55%, #fbcfe8 100%);
+            color: #4a1d34;
+        }
+
+        /* 頂部與底部面板主題自適應 */
+        body.theme-dark .theme-panel {
+            background: rgba(30, 27, 75, 0.85);
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+        body.theme-light .theme-panel {
+            background: rgba(255, 250, 245, 0.88);
+            border-color: rgba(244, 114, 182, 0.45);
+            box-shadow: 0 10px 25px rgba(219, 39, 119, 0.12);
+        }
+
+        body.theme-dark .theme-subpanel {
+            background: rgba(49, 46, 129, 0.75);
+            border-color: rgba(139, 92, 246, 0.5);
+            color: #e0e7ff;
+        }
+        body.theme-light .theme-subpanel {
+            background: rgba(252, 231, 243, 0.9);
+            border-color: rgba(244, 114, 182, 0.55);
+            color: #831843;
+        }
+
+        body.theme-dark .theme-title { color: #fcd34d; }
+        body.theme-light .theme-title { color: #be185d; }
+
+        body.theme-dark .theme-muted { color: #c4b5fd; }
+        body.theme-light .theme-muted { color: #9d174d; }
+
+        body.theme-dark .theme-badge {
+            background: #4c1d95;
+            color: #ede9fe;
+            border-color: #8b5cf6;
+        }
+        body.theme-light .theme-badge {
+            background: #fce7f3;
+            color: #be185d;
+            border-color: #f472b6;
+        }
+
+        /* 遊戲棋盤容器：保持 18:11 比例 (含外圍一圈隱形路徑) */
+        .board-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1080px;
+            aspect-ratio: 18 / 11;
+            margin: 0 auto;
+            border-radius: 18px;
+            padding: 4px;
+            transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        body.theme-dark .board-wrapper {
+            background: rgba(15, 23, 42, 0.78);
+            border: 3px solid rgba(167, 139, 250, 0.25);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.65), 0 12px 32px rgba(15, 23, 42, 0.7);
+        }
+
+        body.theme-light .board-wrapper {
+            background: rgba(255, 245, 238, 0.82);
+            border: 3px solid rgba(244, 114, 182, 0.45);
+            box-shadow: inset 0 0 35px rgba(244, 114, 182, 0.18), 0 12px 32px rgba(219, 39, 119, 0.15);
+        }
+
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(18, minmax(0, 1fr));
+            grid-template-rows: repeat(11, minmax(0, 1fr));
+            width: 100%;
+            height: 100%;
+            gap: 3px;
+            position: relative;
+            z-index: 10;
+        }
+
+        @media (max-width: 640px) {
+            .board-grid {
+                gap: 1.5px;
+            }
+            .board-wrapper {
+                padding: 2px;
+                border-radius: 10px;
+            }
+        }
+
+        /* 經典立體麻將牌樣式 */
+        .mahjong-tile {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #fffdf9 0%, #f3ead8 100%);
+            border-radius: 7px;
+            border: 1px solid #d6c7b2;
+            box-shadow: 
+                0 4px 0 #b89f7d,
+                0 5px 6px rgba(0, 0, 0, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease, background 0.15s ease;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .mahjong-tile {
+                border-radius: 4px;
+                box-shadow: 
+                    0 2.5px 0 #b89f7d,
+                    0 3px 4px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        .mahjong-tile:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(180deg, #ffffff 0%, #f9f2e4 100%);
+            box-shadow: 
+                0 6px 0 #b89f7d,
+                0 8px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .mahjong-tile:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #b89f7d;
+        }
+
+        /* 選中狀態 */
+        .mahjong-tile.selected {
+            background: linear-gradient(180deg, #fef08a 0%, #facc15 100%);
+            border-color: #eab308;
+            transform: translateY(-3px) scale(1.04);
+            box-shadow: 
+                0 6px 0 #ca8a04,
+                0 0 16px rgba(250, 204, 21, 0.85);
+            z-index: 20;
+        }
+
+        /* 提示狀態 */
+        .mahjong-tile.hinted {
+            animation: pulseHint 0.9s infinite alternate;
+            border: 2px solid #38bdf8;
+            z-index: 15;
+        }
+
+        /* 配對錯誤震動 */
+        .mahjong-tile.shake {
+            animation: shakeTile 0.3s ease-in-out;
+            background: linear-gradient(180deg, #fecaca 0%, #f87171 100%);
+        }
+
+        /* 消除動畫 */
+        .mahjong-tile.matched {
+            animation: popOut 0.24s ease-out forwards;
+            pointer-events: none;
+        }
+
+        /* Emoji 大小自適應：移除角落數字後置中放大，在小螢幕也清晰好認 */
+        .tile-emoji {
+            font-size: clamp(1.15rem, 3.2vw, 2.45rem);
+            line-height: 1;
+            filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.16));
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 柔和底色與底部色條：不遮擋圖案又能輔助分辨相近色動物 */
+        .tile-corner-tint {
+            position: absolute;
+            inset: 0;
+            opacity: 0.24;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .tile-accent-bar {
+            position: absolute;
+            bottom: 0;
+            left: 12%;
+            right: 12%;
+            height: 3.5px;
+            border-radius: 3px 3px 0 0;
+            opacity: 0.75;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        @keyframes pulseHint {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 4px 0 #0284c7, 0 0 8px #38bdf8;
+            }
+            100% {
+                transform: scale(1.07) translateY(-2px);
+                box-shadow: 0 6px 0 #0284c7, 0 0 20px #38bdf8;
+            }
+        }
+
+        @keyframes shakeTile {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            50% { transform: translateX(4px); }
+            75% { transform: translateX(-3px); }
+        }
+
+        @keyframes popOut {
+            0% {
+                transform: scale(1.12);
+                opacity: 1;
+                background: #bef264;
+            }
+            100% {
+                transform: scale(0.2);
+                opacity: 0;
+            }
+        }
+
+        /* SVG 閃電連線層 */
+        #connection-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 30;
+        }
+
+        .laser-line-outer {
+            fill: none;
+            stroke: #38bdf8;
+            stroke-width: 7;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 8px #38bdf8) drop-shadow(0 0 16px #0284c7);
+            animation: fadeLaser 0.28s ease-out forwards;
+        }
+
+        .laser-line-inner {
+            fill: none;
+            stroke: #ffffff;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            animation: fadeLaser 0.28s ease-out forwards;
+        }
+
+        @keyframes fadeLaser {
+            0% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* 立體遊戲按鈕 */
+        .game-btn {
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+        }
+        .game-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            filter: brightness(1.08);
+        }
+        .game-btn:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+        }
+        .game-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="theme-dark min-h-screen flex flex-col justify-between p-2 sm:p-4">
+
+    <!-- 頂部狀態與控制列 -->
+    <header class="w-full max-w-[1080px] mx-auto mb-2">
+        <div class="theme-panel border rounded-2xl p-2.5 sm:p-3.5 shadow-xl backdrop-blur-md transition-colors duration-300">
+            <!-- 第一排：標題、關卡選擇、工具按鈕 -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                <!-- 標題與關卡資訊 -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center text-2xl shadow-inner border-2 border-amber-200">
+                        🀄
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="theme-title text-base sm:text-xl font-black tracking-wide drop-shadow-sm">
+                                動物麻將連連看
+                            </h1>
+                            <span id="level-badge" class="theme-badge px-2 py-0.5 text-xs font-bold rounded-full border">
+                                第 1 關
+                            </span>
+                        </div>
+                        <p id="level-rule-text" class="theme-muted text-xs font-medium">
+                            移動規則：靜止不動（經典原版）
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 關卡快速切換 & 數據統計 -->
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <!-- 關卡切換下拉選單 (方便測試 1~9 關不同方向) -->
+                    <div class="theme-subpanel flex items-center border rounded-xl px-2 py-1 text-xs sm:text-sm">
+                        <label for="level-select" class="mr-1.5 font-bold">選關:</label>
+                        <select id="level-select" class="bg-transparent font-bold focus:outline-none cursor-pointer">
+                            <option value="1" class="bg-slate-900 text-white">第 1 關：靜止不動</option>
+                            <option value="2" class="bg-slate-900 text-white">第 2 關：向下移動 ⬇️</option>
+                            <option value="3" class="bg-slate-900 text-white">第 3 關：向上移動 ⬆️</option>
+                            <option value="4" class="bg-slate-900 text-white">第 4 關：向左移動 ⬅️</option>
+                            <option value="5" class="bg-slate-900 text-white">第 5 關：向右移動 ➡️</option>
+                            <option value="6" class="bg-slate-900 text-white">第 6 關：上下分離 ↕️</option>
+                            <option value="7" class="bg-slate-900 text-white">第 7 關：上下集中 ⏬⏫</option>
+                            <option value="8" class="bg-slate-900 text-white">第 8 關：左右分離 ↔️</option>
+                            <option value="9" class="bg-slate-900 text-white">第 9 關：左右集中 ⏩⏪</option>
+                        </select>
+                    </div>
+
+                    <!-- 剩餘牌數與分數 -->
+                    <div class="flex items-center gap-3 bg-slate-900/80 text-white px-3 py-1.5 rounded-xl border border-white/15 text-xs sm:text-sm shadow-inner">
+                        <div>
+                            <span class="text-purple-300">剩餘:</span>
+                            <span id="remaining-count" class="font-black text-white ml-0.5">144</span>
+                        </div>
+                        <div class="h-3 w-[1px] bg-white/20"></div>
+                        <div>
+                            <span class="text-amber-300">分數:</span>
+                            <span id="score-text" class="font-black text-amber-400 ml-0.5">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 道具與系統控制按鈕 -->
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                    <button id="hint-btn" onclick="useHint()" class="game-btn flex items-center gap-1 bg-sky-600 hover:bg-sky-500 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs sm:text-sm border border-sky-400">
+                        <span>💡 提示</span>
+                        <span id="hint-count" class="bg-sky-900/80 px-1.5 py-0.2 rounded-md text-sky-200">5</span>
+                    </button>
+
+                    <button id="shuffle-btn" onclick="manualShuffle()" class="game-btn flex items-center gap-1 bg-purple-600 hover:bg-purple-500 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs sm:text-sm border border-purple-400">
+                        <span>🔀 洗牌</span>
+                        <span id="shuffle-count" class="bg-purple-900/80 px-1.5 py-0.2 rounded-md text-purple-200">1</span>
+                    </button>
+
+                    <button id="pause-btn" onclick="togglePause()" class="game-btn bg-amber-600 hover:bg-amber-500 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs sm:text-sm border border-amber-400" title="暫停 (老闆鍵)">
+                        ⏸️ 暫停
+                    </button>
+
+                    <button id="theme-btn" onclick="toggleTheme()" class="game-btn bg-indigo-700 hover:bg-indigo-600 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs sm:text-sm border border-indigo-400" title="切換 🌙深藍紫 / ☀️粉紅膚色 主題">
+                        🌙
+                    </button>
+
+                    <button id="sound-btn" onclick="toggleSound()" class="game-btn bg-slate-700 hover:bg-slate-600 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs sm:text-sm border border-slate-500" title="音效開關">
+                        🔊
+                    </button>
+
+                    <button onclick="restartLevel()" class="game-btn bg-rose-700 hover:bg-rose-600 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs sm:text-sm border border-rose-500" title="重新開局">
+                        ↻ 重開
+                    </button>
+                </div>
+            </div>
+
+            <!-- 第二排：時間倒數條 -->
+            <div class="flex items-center gap-2">
+                <span class="theme-muted text-xs font-bold shrink-0 flex items-center gap-1">
+                    ⏱️ 時間 <span id="timer-seconds" class="theme-title font-mono font-black">07:00</span>
+                </span>
+                <div class="w-full h-3.5 bg-slate-900/65 rounded-full overflow-hidden p-0.5 border border-white/15">
+                    <div id="timer-bar" class="h-full w-full bg-gradient-to-r from-sky-400 via-fuchsia-400 to-rose-500 rounded-full transition-all duration-300"></div>
+                </div>
+                <button id="relax-mode-btn" onclick="toggleRelaxMode()" class="theme-subpanel text-[11px] font-bold px-2 py-0.5 rounded-lg border shrink-0 transition">
+                    計時模式
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 中央遊戲棋盤區 (16x9 牌面 + 外圍1格緩衝 = 18x11) -->
+    <main class="flex-1 flex flex-col items-center justify-center w-full px-1 relative">
+        <div class="board-wrapper">
+            <!-- 閃電連線 SVG 畫布 -->
+            <svg id="connection-svg" viewBox="0 0 1800 1100" preserveAspectRatio="none"></svg>
+
+            <!-- 18 x 11 格狀容器 -->
+            <div id="board-grid" class="board-grid"></div>
+
+            <!-- 浮動通知 Toast (例如無牌可消自動洗牌) -->
+            <div id="toast-msg" class="pointer-events-none opacity-0 translate-y-2 transition-all duration-300 absolute bottom-4 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 text-amber-300 border border-amber-400/50 px-4 py-2 rounded-full text-xs sm:text-sm font-bold shadow-lg whitespace-nowrap">
+                <span id="toast-text"></span>
+            </div>
+
+            <!-- 暫停遮罩 (兼顧以前上課偷玩的防禦精神 + 隨機動物小知識) -->
+            <div id="pause-overlay" class="hidden absolute inset-0 z-40 bg-indigo-950/95 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center p-6 text-center">
+                <div class="text-5xl mb-3">⏸️</div>
+                <h2 class="text-2xl sm:text-3xl font-black text-amber-300 mb-3">遊戲已暫停</h2>
+                <div class="bg-white/10 border border-white/20 rounded-2xl px-5 py-3.5 max-w-md mb-6 shadow-inner">
+                    <div class="text-xs font-bold text-amber-300/90 mb-1">🐾 動物小知識時間 🐾</div>
+                    <p id="pause-trivia-text" class="text-indigo-100 text-sm sm:text-base font-medium leading-relaxed">
+                        鵝和企鵝等鳥類的嘴巴裡與舌頭上其實長滿了像「尖牙」的角質突起，用來牢牢咬住滑溜溜的魚和水草！
+                    </p>
+                </div>
+                <button onclick="togglePause()" class="game-btn bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-8 py-3 rounded-2xl text-lg border-2 border-white">
+                    ▶️ 繼續遊戲
+                </button>
+            </div>
+
+            <!-- 過關 / 遊戲結束 結算視窗 -->
+            <div id="modal-overlay" class="hidden absolute inset-0 z-50 bg-slate-950/85 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center p-6 text-center">
+                <div id="modal-icon" class="text-6xl mb-3">🎉</div>
+                <h2 id="modal-title" class="text-2xl sm:text-4xl font-black text-amber-300 mb-2">恭喜過關！</h2>
+                <p id="modal-desc" class="text-indigo-100 text-sm sm:text-base max-w-md mb-6">
+                    成功消除全部 144 張動物麻將！
+                </p>
+                <div class="flex flex-wrap items-center justify-center gap-3">
+                    <button id="modal-primary-btn" onclick="nextLevel()" class="game-btn bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-7 py-3 rounded-2xl text-base sm:text-lg border-2 border-white">
+                        前往下一關 ➡️
+                    </button>
+                    <button onclick="restartLevel()" class="game-btn bg-purple-700 hover:bg-purple-600 text-white font-bold px-6 py-3 rounded-2xl text-base border border-purple-400">
+                        重玩本關 ↻
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部簡易規則與圖鑑提示 -->
+    <footer class="w-full max-w-[1080px] mx-auto mt-2 text-center">
+        <div class="theme-panel border rounded-xl px-3 py-1.5 text-[11px] sm:text-xs theme-muted flex flex-wrap items-center justify-between gap-2 transition-colors duration-300">
+            <span>📌 <b>連線規則：</b>兩張相同動物的麻將，連線轉彎不超過 <b>2 次</b>（最多 3 條直線）即可消除。</span>
+            <span>💡 <b>貼心設計：</b>場上無解時會<b>無限次免費自動洗牌</b>；每關與重開皆會恢復 <b>5 次提示</b> 與 <b>1 次手動洗牌</b>。</span>
+        </div>
+    </footer>
+
+    <script>
+        /**************************************************************
+         * 1. 36 種動物 Emoji 與 9 大色系配置常數
+         *    (已將 🐂->🐖、🦈->🐟、🕊️->🐧、🐐->🦞，並強化褐色系底色區隔)
+         **************************************************************/
+        const ANIMAL_CATALOG = [
+            // 1. 黃色系 (4)：狗、貓、馬、駱駝
+            { emoji: '🐕', name: '柴犬', bg: '#fef08a', bar: '#eab308' },
+            { emoji: '🐈', name: '橘貓', bg: '#fde047', bar: '#ca8a04' },
+            { emoji: '🐎', name: '駿馬', bg: '#fef9c3', bar: '#d97706' },
+            { emoji: '🐪', name: '駱駝', bg: '#fde68a', bar: '#b45309' },
+
+            // 2. 橘色系 (5)：章魚、螃蟹、紅毛猩猩、松鼠、貓頭鷹
+            { emoji: '🐙', name: '章魚', bg: '#ffedd5', bar: '#ea580c' },
+            { emoji: '🦀', name: '螃蟹', bg: '#fed7aa', bar: '#c2410c' },
+            { emoji: '🦧', name: '猩猩', bg: '#fdba74', bar: '#9a3412' },
+            { emoji: '🐿️', name: '松鼠', bg: '#ffedd5', bar: '#f97316' },
+            { emoji: '🦉', name: '貓頭鷹', bg: '#fef3c7', bar: '#d97706' },
+
+            // 3. 褐色系 (6)：猴、火雞、刺蝟、水獺(私心保留!)、鹿、樹懶
+            // 特別將這 6 隻褐色動物的底盤襯色拉開冷暖對比，保留代表性又不會眼花！
+            { emoji: '🐒', name: '猴子', bg: '#e7e5e4', bar: '#78350f' }, // 暖岩灰褐底
+            { emoji: '🦃', name: '火雞', bg: '#ffe4e6', bar: '#9f1239' }, // 襯托火雞紅冠的酒紅粉底
+            { emoji: '🦔', name: '刺蝟', bg: '#f5f5f4', bar: '#57534e' }, // 銀針深褐底
+            { emoji: '🦦', name: '水獺', bg: '#ccfbf1', bar: '#0d9488' }, // 清澈溪水藍綠底，一眼認出可愛水獺！
+            { emoji: '🦌', name: '梅花鹿', bg: '#fef3c7', bar: '#b45309' }, // 陽光森林金杏底
+            { emoji: '🦥', name: '樹懶', bg: '#ecfccb', bar: '#4d7c0f' }, // 樹冠青苔綠底
+
+            // 4. 綠色系 (3)：龜、蛇、孔雀
+            { emoji: '🐢', name: '烏龜', bg: '#dcfce7', bar: '#15803d' },
+            { emoji: '🐍', name: '青蛇', bg: '#bbf7d0', bar: '#16a34a' },
+            { emoji: '🦚', name: '孔雀', bg: '#d1fae5', bar: '#059669' },
+
+            // 5. 藍色系 (3)：鯨魚、海豚、魚 (🦈->🐟)
+            { emoji: '🐳', name: '鯨魚', bg: '#dbeafe', bar: '#1d4ed8' },
+            { emoji: '🐬', name: '海豚', bg: '#e0f2fe', bar: '#0284c7' },
+            { emoji: '🐟', name: '熱帶魚', bg: '#cffafe', bar: '#0891b2' },
+
+            // 6. 粉紅與鮮紅系 (4)：紅鶴、魷魚、豬 (🐂->🐖)、龍蝦 (🐐->🦞)
+            { emoji: '🦩', name: '紅鶴', bg: '#fce7f3', bar: '#db2777' },
+            { emoji: '🦑', name: '魷魚', bg: '#fae8ff', bar: '#c026d3' },
+            { emoji: '🐖', name: '小豬', bg: '#ffe4e6', bar: '#f43f5e' },
+            { emoji: '🦞', name: '龍蝦', bg: '#fee2e2', bar: '#dc2626' },
+
+            // 7. 灰色系 (3)：鼠、象、貴賓狗
+            { emoji: '🐀', name: '老鼠', bg: '#f1f5f9', bar: '#64748b' },
+            { emoji: '🐘', name: '大象', bg: '#e2e8f0', bar: '#475569' },
+            { emoji: '🐩', name: '貴賓狗', bg: '#f3e8ff', bar: '#9333ea' },
+
+            // 8. 白色系 (4)：天鵝、綿羊、兔、公雞
+            { emoji: '🦢', name: '天鵝', bg: '#ffffff', bar: '#38bdf8' },
+            { emoji: '🐏', name: '綿羊', bg: '#fafaf9', bar: '#a8a29e' },
+            { emoji: '🐇', name: '白兔', bg: '#fff1f2', bar: '#fb7185' },
+            { emoji: '🐓', name: '公雞', bg: '#fffbeb', bar: '#ef4444' },
+
+            // 9. 綜合撞色系 (4)：鸚鵡、乳牛、綠頭鴨、企鵝 (🕊️->🐧)
+            { emoji: '🦜', name: '鸚鵡', bg: '#fef2f2', bar: '#ef4444' },
+            { emoji: '🐄', name: '乳牛', bg: '#f8fafc', bar: '#1e293b' },
+            { emoji: '🦆', name: '綠頭鴨', bg: '#ecfdf5', bar: '#047857' },
+            { emoji: '🐧', name: '企鵝', bg: '#eef2ff', bar: '#4f46e5' }
+        ];
+
+        // 9 大經典關卡的移動規則定義
+        const LEVEL_CONFIGS = {
+            1: { name: '靜止不動（經典原版）', desc: '消除後麻將牌保持原位不動' },
+            2: { name: '向下移動 ⬇️', desc: '消除後上方的麻將牌會往下掉落補齊' },
+            3: { name: '向上移動 ⬆️', desc: '消除後下方的麻將牌會往上漂浮補齊' },
+            4: { name: '向左移動 ⬅️', desc: '消除後右方的麻將牌會往左滑動補齊' },
+            5: { name: '向右移動 ➡️', desc: '消除後左方的麻將牌會往右滑動補齊' },
+            6: { name: '上下分離 ↕️', desc: '上半部往上靠攏、下半部往下靠攏' },
+            7: { name: '上下集中 ⏬⏫', desc: '上下兩側的麻將牌往水平中央靠攏' },
+            8: { name: '左右分離 ↔️', desc: '左半部往左靠攏、右半部往右靠攏' },
+            9: { name: '左右集中 ⏩⏪', desc: '左右兩側的麻將牌往垂直中央靠攏' }
+        };
+
+        // 暫停時的 15 則隨機動物小知識題庫
+        const PAUSE_TRIVIA = [
+            '鵝和企鵝等鳥類的嘴巴裡與舌頭上其實長滿了像「尖牙」的角質突起（齒狀突與乳突），用來牢牢咬住滑溜溜的魚和水草！',
+            '海獺睡覺時真的會彼此手牽手，甚至會用海藻把自己和同伴纏在一起，以免睡著後被海浪沖散。',
+            '章魚擁有「三顆心臟」與「九個大腦」（一個主腦加上八隻腕足各有獨立的神經節），而且牠們的血液是藍色的！',
+            '樹懶的新陳代謝極慢，消化一片葉子最長需要花上一個月的時間，而且牠們大約一週才下樹排便一次。',
+            '紅鶴剛出生時羽毛其實是灰白色的，是因為長期吃富含蝦紅素的藻類與小蝦，羽毛才逐漸染成粉紅色。',
+            '松鼠每年埋在土裡的堅果有超過一半會忘記位置，但也因此無意間幫森林種下了無數棵新樹。',
+            '貓頭鷹的眼球是圓柱狀的，完全不能在眼眶裡轉動，所以牠們演化出能左右旋轉 270 度的靈活脖子。',
+            '乳牛其實有「最好的朋友」，當牠們跟好朋友待在一起時，心跳會變慢、壓力荷爾蒙也會明顯下降。',
+            '龍蝦的味覺器官長在「腳」上，而牠們用來感知氣味的器官則長在觸鬚上，甚至會從臉部噴出尿液來溝通。',
+            '部分水龜在冬眠時不僅用肺呼吸，還能透過「屁股」（泄殖腔周圍的微血管）直接從水中吸收氧氣。',
+            '大象是極少數無法跳躍的哺乳動物，但牠們的腳掌能感受到數公里外同伴踩踏地面傳來的低頻震動。',
+            '海豚睡覺時只會讓「一半的大腦」休息，另一半大腦和一隻眼睛保持清醒，好隨時浮出水面換氣並警戒天敵。',
+            '刺蝟遇到危險縮成一顆球時，身上最多會豎起多達 5,000 到 7,000 根由角蛋白構成的尖刺。',
+            '駱駝的駝峰裡裝的其實不是水，而是滿滿的「脂肪」；牠們真正儲水的地方是血液與極度節水的腎臟。',
+            '孔雀開屏展現華麗尾羽的是雄孔雀，而且那些長長的羽毛其實是牠們的「尾上覆羽」，並不是真正的尾巴。'
+        ];
+        let lastTriviaIndex = -1;
+
+        // 棋盤尺寸：內部 16x9，加上外圍 1 格邊界 = 18x11
+        const PLAY_COLS = 16;
+        const PLAY_ROWS = 9;
+        const GRID_COLS = PLAY_COLS + 2; // 18 (col: 0 ~ 17, 實際牌面在 1 ~ 16)
+        const GRID_ROWS = PLAY_ROWS + 2; // 11 (row: 0 ~ 10, 實際牌面在 1 ~ 9)
+
+        const MAX_TIME = 420; // 每關充裕 420 秒 (7 分鐘)
+        const MATCH_TIME_BONUS = 3.0; // 每次消除獎勵 +3 秒
+
+        /**************************************************************
+         * 2. 遊戲全域狀態
+         **************************************************************/
+        let board = []; // 2D 陣列 [row][col]，0 代表空，1~36 代表動物 ID
+        let currentLevel = 1;
+        let score = 0;
+        let remainingTiles = 144;
+        let shufflesLeft = 1;
+        let hintsLeft = 5;
+        let timeLeft = MAX_TIME;
+        let timerInterval = null;
+        let isPaused = false;
+        let isRelaxMode = false; // 休閒無計時模式
+        let isAnimating = false;
+        let selectedCell = null; // { r, c }
+        let hintedCells = [];    // [{ r, c }, { r, c }]
+        let soundEnabled = true;
+        let isLightMode = false; // false = 🌙 深藍+深紫模式, true = ☀️ 粉紅+淺膚色模式
+
+        /**************************************************************
+         * 3. Web Audio 合成音效系統 (不依賴外部音檔)
+         **************************************************************/
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioCtx = new AudioContextClass();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+
+                if (type === 'select') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.exponentialRampToValueAtTime(680, now + 0.06);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.06);
+                } else if (type === 'match') {
+                    const notes = [587.33, 880, 1174.66]; // D5, A5, D6 清脆消除音
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.045);
+                        gain.gain.setValueAtTime(0.16, now + idx * 0.045);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.045 + 0.16);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.045);
+                        osc.stop(now + idx * 0.045 + 0.16);
+                    });
+                } else if (type === 'error') {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(160, now);
+                    osc.frequency.linearRampToValueAtTime(115, now + 0.15);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'shuffle') {
+                    const notes = [330, 392, 493.88, 659.25];
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+                        gain.gain.setValueAtTime(0.12, now + idx * 0.04);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.04 + 0.12);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.04);
+                        osc.stop(now + idx * 0.04 + 0.12);
+                    });
+                } else if (type === 'win') {
+                    const notes = [523.25, 659.25, 783.99, 1046.5];
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+                        gain.gain.setValueAtTime(0.2, now + idx * 0.09);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.35);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + idx * 0.09);
+                        osc.stop(now + idx * 0.09 + 0.35);
+                    });
+                }
+            } catch (e) {
+                // 忽略瀏覽器音效限制錯誤
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-btn').textContent = soundEnabled ? '🔊' : '🔇';
+        }
+
+        function toggleTheme() {
+            isLightMode = !isLightMode;
+            const body = document.body;
+            const themeBtn = document.getElementById('theme-btn');
+
+            if (isLightMode) {
+                body.classList.remove('theme-dark');
+                body.classList.add('theme-light');
+                themeBtn.textContent = '☀️';
+                themeBtn.className = 'game-btn bg-pink-500 hover:bg-pink-400 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs sm:text-sm border border-pink-300';
+            } else {
+                body.classList.remove('theme-light');
+                body.classList.add('theme-dark');
+                themeBtn.textContent = '🌙';
+                themeBtn.className = 'game-btn bg-indigo-700 hover:bg-indigo-600 text-white font-bold px-2.5 py-1.5 rounded-xl text-xs sm:text-sm border border-indigo-400';
+            }
+        }
+
+        /**************************************************************
+         * 4. 棋盤初始化與洗牌演算法
+         **************************************************************/
+        function initGame(level = 1, resetScore = false) {
+            currentLevel = level;
+            if (resetScore) {
+                score = 0;
+            }
+
+            // 每次進入新關卡、切換關卡或重來時，皆固定恢復為 5 次提示與 1 次手動洗牌
+            shufflesLeft = 1;
+            hintsLeft = 5;
+
+            selectedCell = null;
+            hintedCells = [];
+            isPaused = false;
+            isAnimating = false;
+            remainingTiles = PLAY_COLS * PLAY_ROWS; // 144 張牌
+            timeLeft = MAX_TIME;
+
+            document.getElementById('modal-overlay').classList.add('hidden');
+            document.getElementById('pause-overlay').classList.add('hidden');
+            document.getElementById('level-select').value = String(currentLevel);
+
+            // 建立 144 張牌 (36 種動物 * 每種 4 張)
+            const deck = [];
+            for (let id = 1; id <= 36; id++) {
+                for (let k = 0; k < 4; k++) {
+                    deck.push(id);
+                }
+            }
+
+            // Fisher-Yates 洗牌
+            shuffleArray(deck);
+
+            // 填入 18 x 11 棋盤 (外圍一圈 0)
+            board = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(0));
+            let idx = 0;
+            for (let r = 1; r <= PLAY_ROWS; r++) {
+                for (let c = 1; c <= PLAY_COLS; c++) {
+                    board[r][c] = deck[idx++];
+                }
+            }
+
+            // 確保開局一定有解
+            ensureValidMovesOnBoard();
+
+            updateHUD();
+            renderBoard();
+            startTimer();
+        }
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+
+        // 將場上剩餘的牌抽出來重洗，保留原本空格的位置
+        function shuffleRemainingTiles() {
+            const remainingValues = [];
+            for (let r = 1; r <= PLAY_ROWS; r++) {
+                for (let c = 1; c <= PLAY_COLS; c++) {
+                    if (board[r][c] !== 0) {
+                        remainingValues.push(board[r][c]);
+                    }
+                }
+            }
+
+            if (remainingValues.length <= 0) return;
+
+            let attempts = 0;
+            do {
+                shuffleArray(remainingValues);
+                let idx = 0;
+                for (let r = 1; r <= PLAY_ROWS; r++) {
+                    for (let c = 1; c <= PLAY_COLS; c++) {
+                        if (board[r][c] !== 0) {
+                            board[r][c] = remainingValues[idx++];
+                        }
+                    }
+                }
+                attempts++;
+            } while (!findFirstAvailablePair() && attempts < 50);
+        }
+
+        function ensureValidMovesOnBoard() {
+            if (!findFirstAvailablePair()) {
+                shuffleRemainingTiles();
+            }
+        }
+
+        /**************************************************************
+         * 5. 核心演算法：最多轉兩個彎 (3 條線段內) 路徑檢查
+         **************************************************************/
+        // 檢查 (r1, c1) 與 (r2, c2) 是否在同一條無障礙直線上 (不含起點與終點本身)
+        function isClearLine(r1, c1, r2, c2) {
+            if (r1 === r2) {
+                const minC = Math.min(c1, c2);
+                const maxC = Math.max(c1, c2);
+                for (let c = minC + 1; c < maxC; c++) {
+                    if (board[r1][c] !== 0) return false;
+                }
+                return true;
+            }
+            if (c1 === c2) {
+                const minR = Math.min(r1, r2);
+                const maxR = Math.max(r1, r2);
+                for (let r = minR + 1; r < maxR; r++) {
+                    if (board[r][c1] !== 0) return false;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * 尋找兩張牌之間的連線路徑 (最多 2 個轉折點)
+         * 回傳座標點陣列 [{r,c}, ...]，若無法連線則回傳 null
+         * 若有傳入多個可行路徑，自動選擇總曼哈頓距離最短的路徑
+         */
+        function findConnectionPath(r1, c1, r2, c2) {
+            if (r1 === r2 && c1 === c2) return null;
+            if (board[r1][c1] === 0 || board[r2][c2] === 0) return null;
+            if (board[r1][c1] !== board[r2][c2]) return null;
+
+            // 情況 0：0 次轉彎 (同一直線)
+            if ((r1 === r2 || c1 === c2) && isClearLine(r1, c1, r2, c2)) {
+                return [{ r: r1, c: c1 }, { r: r2, c: c2 }];
+            }
+
+            // 情況 1：1 次轉彎 (L 型，檢查兩個轉角點 (r1, c2) 與 (r2, c1))
+            if (board[r1][c2] === 0 && isClearLine(r1, c1, r1, c2) && isClearLine(r1, c2, r2, c2)) {
+                return [{ r: r1, c: c1 }, { r: r1, c: c2 }, { r: r2, c: c2 }];
+            }
+            if (board[r2][c1] === 0 && isClearLine(r1, c1, r2, c1) && isClearLine(r2, c1, r2, c2)) {
+                return [{ r: r1, c: c1 }, { r: r2, c: c1 }, { r: r2, c: c2 }];
+            }
+
+            // 情況 2：2 次轉彎 (U 型或 Z 型)，收集所有可行路徑並挑選最短的一條
+            let bestPath = null;
+            let bestDist = Infinity;
+
+            // 水平延伸掃描：尋找中間欄 c (0 ~ GRID_COLS-1)
+            for (let c = 0; c < GRID_COLS; c++) {
+                if (c === c1 || c === c2) continue;
+                if (board[r1][c] === 0 && board[r2][c] === 0) {
+                    if (isClearLine(r1, c1, r1, c) && isClearLine(r1, c, r2, c) && isClearLine(r2, c, r2, c2)) {
+                        const dist = Math.abs(c - c1) + Math.abs(r2 - r1) + Math.abs(c2 - c);
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            bestPath = [
+                                { r: r1, c: c1 },
+                                { r: r1, c: c },
+                                { r: r2, c: c },
+                                { r: r2, c: c2 }
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // 垂直延伸掃描：尋找中間列 r (0 ~ GRID_ROWS-1)
+            for (let r = 0; r < GRID_ROWS; r++) {
+                if (r === r1 || r === r2) continue;
+                if (board[r][c1] === 0 && board[r][c2] === 0) {
+                    if (isClearLine(r1, c1, r, c1) && isClearLine(r, c1, r, c2) && isClearLine(r, c2, r2, c2)) {
+                        const dist = Math.abs(r - r1) + Math.abs(c2 - c1) + Math.abs(r2 - r);
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            bestPath = [
+                                { r: r1, c: c1 },
+                                { r: r, c: c1 },
+                                { r: r, c: c2 },
+                                { r: r2, c: c2 }
+                            ];
+                        }
+                    }
+                }
+            }
+
+            return bestPath;
+        }
+
+        // 掃描整個棋盤是否還有任何可消除的一對 (供死局偵測與提示使用)
+        function findFirstAvailablePair() {
+            const positionsByType = {};
+            for (let r = 1; r <= PLAY_ROWS; r++) {
+                for (let c = 1; c <= PLAY_COLS; c++) {
+                    const id = board[r][c];
+                    if (id !== 0) {
+                        if (!positionsByType[id]) positionsByType[id] = [];
+                        positionsByType[id].push({ r, c });
+                    }
+                }
+            }
+
+            for (const id in positionsByType) {
+                const list = positionsByType[id];
+                for (let i = 0; i < list.length; i++) {
+                    for (let j = i + 1; j < list.length; j++) {
+                        const p1 = list[i];
+                        const p2 = list[j];
+                        const path = findConnectionPath(p1.r, p1.c, p2.r, p2.c);
+                        if (path) {
+                            return { p1, p2, path };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        /**************************************************************
+         * 6. 9 大關卡麻將位移 (重力系統)
+         **************************************************************/
+        function applyLevelGravity(level) {
+            if (level === 1) return; // 第 1 關：靜止不動
+
+            // 輔助函式：對單一列或單一欄的區間壓縮非零元素
+            // direction = 'start' (往小索引靠攏) 或 'end' (往大索引靠攏)
+            const packSegment = (values, direction) => {
+                const nonZero = values.filter(v => v !== 0);
+                const zeros = Array(values.length - nonZero.length).fill(0);
+                return direction === 'start' ? [...nonZero, ...zeros] : [...zeros, ...nonZero];
+            };
+
+            if (level === 2) {
+                // 第 2 關：向下集中 (col 1~16, row 1~9 往大索引靠攏)
+                for (let c = 1; c <= PLAY_COLS; c++) {
+                    const colVals = [];
+                    for (let r = 1; r <= PLAY_ROWS; r++) colVals.push(board[r][c]);
+                    const packed = packSegment(colVals, 'end');
+                    for (let r = 1; r <= PLAY_ROWS; r++) board[r][c] = packed[r - 1];
+                }
+            } else if (level === 3) {
+                // 第 3 關：向上集中 (row 1~9 往小索引靠攏)
+                for (let c = 1; c <= PLAY_COLS; c++) {
+                    const colVals = [];
+                    for (let r = 1; r <= PLAY_ROWS; r++) colVals.push(board[r][c]);
+                    const packed = packSegment(colVals, 'start');
+                    for (let r = 1; r <= PLAY_ROWS; r++) board[r][c] = packed[r - 1];
+                }
+            } else if (level === 4) {
+                // 第 4 關：向左靠攏 (col 1~16 往小索引靠攏)
+                for (let r = 1; r <= PLAY_ROWS; r++) {
+                    const rowVals = board[r].slice(1, PLAY_COLS + 1);
+                    const packed = packSegment(rowVals, 'start');
+                    for (let c = 1; c <= PLAY_COLS; c++) board[r][c] = packed[c - 1];
+                }
+            } else if (level === 5) {
+                // 第 5 關：向右靠攏 (col 1~16 往大索引靠攏)
+                for (let r = 1; r <= PLAY_ROWS; r++) {
+                    const rowVals = board[r].slice(1, PLAY_COLS + 1);
+                    const packed = packSegment(rowVals, 'end');
+                    for (let c = 1; c <= PLAY_COLS; c++) board[r][c] = packed[c - 1];
+                }
+            } else if (level === 6) {
+                // 第 6 關：上下分離 (上半 row 1~4 往上、下半 row 5~9 往下)
+                const midRow = 4;
+                for (let c = 1; c <= PLAY_COLS; c++) {
+                    const topVals = [];
+                    for (let r = 1; r <= midRow; r++) topVals.push(board[r][c]);
+                    const packedTop = packSegment(topVals, 'start');
+                    for (let r = 1; r <= midRow; r++) board[r][c] = packedTop[r - 1];
+
+                    const botVals = [];
+                    for (let r = midRow + 1; r <= PLAY_ROWS; r++) botVals.push(board[r][c]);
+                    const packedBot = packSegment(botVals, 'end');
+                    for (let r = midRow + 1; r <= PLAY_ROWS; r++) board[r][c] = packedBot[r - (midRow + 1)];
+                }
+            } else if (level === 7) {
+                // 第 7 關：上下集中 (上半 row 1~4 往下靠中、下半 row 5~9 往上靠中)
+                const midRow = 4;
+                for (let c = 1; c <= PLAY_COLS; c++) {
+                    const topVals = [];
+                    for (let r = 1; r <= midRow; r++) topVals.push(board[r][c]);
+                    const packedTop = packSegment(topVals, 'end');
+                    for (let r = 1; r <= midRow; r++) board[r][c] = packedTop[r - 1];
+
+                    const botVals = [];
+                    for (let r = midRow + 1; r <= PLAY_ROWS; r++) botVals.push(board[r][c]);
+                    const packedBot = packSegment(botVals, 'start');
+                    for (let r = midRow + 1; r <= PLAY_ROWS; r++) board[r][c] = packedBot[r - (midRow + 1)];
+                }
+            } else if (level === 8) {
+                // 第 8 關：左右分離 (左半 col 1~8 往左、右半 col 9~16 往右)
+                const midCol = 8;
+                for (let r = 1; r <= PLAY_ROWS; r++) {
+                    const leftVals = board[r].slice(1, midCol + 1);
+                    const rightVals = board[r].slice(midCol + 1, PLAY_COLS + 1);
+                    const packedLeft = packSegment(leftVals, 'start');
+                    const packedRight = packSegment(rightVals, 'end');
+                    for (let c = 1; c <= midCol; c++) board[r][c] = packedLeft[c - 1];
+                    for (let c = midCol + 1; c <= PLAY_COLS; c++) board[r][c] = packedRight[c - (midCol + 1)];
+                }
+            } else if (level === 9) {
+                // 第 9 關：左右集中 (左半 col 1~8 往右靠中、右半 col 9~16 往左靠中)
+                const midCol = 8;
+                for (let r = 1; r <= PLAY_ROWS; r++) {
+                    const leftVals = board[r].slice(1, midCol + 1);
+                    const rightVals = board[r].slice(midCol + 1, PLAY_COLS + 1);
+                    const packedLeft = packSegment(leftVals, 'end');
+                    const packedRight = packSegment(rightVals, 'start');
+                    for (let c = 1; c <= midCol; c++) board[r][c] = packedLeft[c - 1];
+                    for (let c = midCol + 1; c <= PLAY_COLS; c++) board[r][c] = packedRight[c - (midCol + 1)];
+                }
+            }
+        }
+
+        /**************************************************************
+         * 7. 畫面渲染與閃電連線特效
+         **************************************************************/
+        function renderBoard() {
+            const gridEl = document.getElementById('board-grid');
+            gridEl.innerHTML = '';
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.dataset.r = r;
+                    cellDiv.dataset.c = c;
+
+                    const animalId = board[r][c];
+                    if (animalId !== 0) {
+                        const tileBtn = document.createElement('div');
+                        tileBtn.className = 'mahjong-tile';
+                        tileBtn.id = `tile-${r}-${c}`;
+
+                        // 是否為選中或提示狀態
+                        if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
+                            tileBtn.classList.add('selected');
+                        }
+                        if (hintedCells.some(h => h.r === r && h.c === c)) {
+                            tileBtn.classList.add('hinted');
+                        }
+
+                        const animalItem = ANIMAL_CATALOG[animalId - 1];
+                        const emojiChar = animalItem.emoji;
+                        const bgTint = animalItem.bg;
+                        const barColor = animalItem.bar;
+
+                        // 移除左上角數字，改以乾淨的大圖示置中呈現，並搭配專屬色系襯底與底線
+                        tileBtn.style.background = `linear-gradient(180deg, #ffffff 0%, ${bgTint} 100%)`;
+                        tileBtn.innerHTML = `
+                            <div class="tile-corner-tint" style="background: radial-gradient(circle at center, ${barColor}, transparent 75%);"></div>
+                            <span class="tile-emoji" title="${animalItem.name}">${emojiChar}</span>
+                            <div class="tile-accent-bar" style="background-color: ${barColor};"></div>
+                        `;
+
+                        tileBtn.addEventListener('click', () => onTileClick(r, c));
+                        cellDiv.appendChild(tileBtn);
+                    }
+
+                    gridEl.appendChild(cellDiv);
+                }
+            }
+        }
+
+        // 在 SVG 上繪製閃電雷射連線 (對應 1800 x 1100 座標空間)
+        function drawLaserPath(path) {
+            const svg = document.getElementById('connection-svg');
+            const pointsStr = path.map(pt => {
+                const x = (pt.c + 0.5) * 100;
+                const y = (pt.r + 0.5) * 100;
+                return `${x},${y}`;
+            }).join(' ');
+
+            svg.innerHTML = `
+                <polyline class="laser-line-outer" points="${pointsStr}" />
+                <polyline class="laser-line-inner" points="${pointsStr}" />
+            `;
+
+            setTimeout(() => {
+                svg.innerHTML = '';
+            }, 280);
+        }
+
+        /**************************************************************
+         * 8. 互動邏輯：選牌、配對、死局檢查
+         **************************************************************/
+        function onTileClick(r, c) {
+            if (isPaused || isAnimating) return;
+            if (board[r][c] === 0) return;
+
+            // 點擊同一張牌：取消選取
+            if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
+                selectedCell = null;
+                playSound('select');
+                renderBoard();
+                return;
+            }
+
+            // 尚未選取第一張牌
+            if (!selectedCell) {
+                selectedCell = { r, c };
+                playSound('select');
+                renderBoard();
+                return;
+            }
+
+            // 已選取第一張牌，嘗試與第二張配對
+            const first = selectedCell;
+            const second = { r, c };
+
+            // 若兩張牌圖案不同，直接將選取切換到新點擊的這張牌（符合原版流暢操作手感）
+            if (board[first.r][first.c] !== board[second.r][second.c]) {
+                selectedCell = second;
+                playSound('select');
+                renderBoard();
+                return;
+            }
+
+            // 圖案相同，檢查路徑是否小於等於 2 次轉彎
+            const path = findConnectionPath(first.r, first.c, second.r, second.c);
+
+            if (path) {
+                // 配對成功！
+                isAnimating = true;
+                selectedCell = null;
+                hintedCells = [];
+                playSound('match');
+                drawLaserPath(path);
+
+                const tile1El = document.getElementById(`tile-${first.r}-${first.c}`);
+                const tile2El = document.getElementById(`tile-${second.r}-${second.c}`);
+                if (tile1El) tile1El.classList.add('matched');
+                if (tile2El) tile2El.classList.add('matched');
+
+                setTimeout(() => {
+                    // 清除陣列中的兩張牌
+                    board[first.r][first.c] = 0;
+                    board[second.r][second.c] = 0;
+                    remainingTiles -= 2;
+                    score += 20;
+                    timeLeft = Math.min(MAX_TIME, timeLeft + MATCH_TIME_BONUS);
+
+                    // 根據目前關卡執行麻將移動
+                    applyLevelGravity(currentLevel);
+
+                    updateHUD();
+                    renderBoard();
+                    isAnimating = false;
+
+                    // 檢查是否全部清空過關，或是否陷入無解需要自動洗牌
+                    checkPostMatchState();
+                }, 230);
+            } else {
+                // 圖案相同但轉彎超過 2 次：震動提示並改選第二張牌
+                playSound('error');
+                const tile2El = document.getElementById(`tile-${second.r}-${second.c}`);
+                if (tile2El) {
+                    tile2El.classList.add('shake');
+                }
+                selectedCell = second;
+                setTimeout(() => renderBoard(), 220);
+            }
+        }
+
+        function checkPostMatchState() {
+            // 1. 檢查是否全數消除
+            if (remainingTiles <= 0) {
+                clearInterval(timerInterval);
+                playSound('win');
+                // 結算剩餘時間加分
+                const timeBonus = Math.floor(timeLeft) * 2;
+                score += timeBonus;
+                updateHUD();
+                showEndModal(true);
+                return;
+            }
+
+            // 2. 檢查場上是否還有可消除的配對（無解時無限次免費自動洗牌，不扣手動洗牌次數）
+            const available = findFirstAvailablePair();
+            if (!available) {
+                playSound('shuffle');
+                showToast('🔄 場上無解，已自動免費重新洗牌！');
+                shuffleRemainingTiles();
+                updateHUD();
+                renderBoard();
+            }
+        }
+
+        /**************************************************************
+         * 9. 道具與控制功能 (提示、手動洗牌、暫停、計時器)
+         **************************************************************/
+        function useHint() {
+            if (isPaused || isAnimating || remainingTiles <= 0) return;
+            if (hintsLeft <= 0) {
+                showToast('本關提示次數已用完！');
+                return;
+            }
+
+            const pair = findFirstAvailablePair();
+            if (pair) {
+                hintsLeft--;
+                hintedCells = [pair.p1, pair.p2];
+                playSound('select');
+                updateHUD();
+                renderBoard();
+            }
+        }
+
+        function manualShuffle() {
+            if (isPaused || isAnimating || remainingTiles <= 0) return;
+            if (shufflesLeft <= 0) {
+                showToast('本關手動洗牌次數已用完！');
+                return;
+            }
+
+            shufflesLeft--;
+            selectedCell = null;
+            hintedCells = [];
+            playSound('shuffle');
+            showToast('🔀 已使用手動重新洗牌！（剩餘 0 次）');
+            shuffleRemainingTiles();
+            updateHUD();
+            renderBoard();
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isPaused || isRelaxMode || remainingTiles <= 0) return;
+
+                timeLeft -= 0.25;
+                if (timeLeft <= 0) {
+                    timeLeft = 0;
+                    updateHUD();
+                    clearInterval(timerInterval);
+                    playSound('error');
+                    showEndModal(false, '時間到！來不及在時限內消除所有動物麻將。');
+                } else {
+                    updateHUD();
+                }
+            }, 250);
+        }
+
+        function togglePause() {
+            if (remainingTiles <= 0) return;
+            isPaused = !isPaused;
+            const pauseOverlay = document.getElementById('pause-overlay');
+            const pauseBtn = document.getElementById('pause-btn');
+
+            if (isPaused) {
+                // 隨機挑選一則不與上次重複的動物小知識
+                let nextIdx;
+                do {
+                    nextIdx = Math.floor(Math.random() * PAUSE_TRIVIA.length);
+                } while (nextIdx === lastTriviaIndex && PAUSE_TRIVIA.length > 1);
+                lastTriviaIndex = nextIdx;
+                document.getElementById('pause-trivia-text').textContent = PAUSE_TRIVIA[nextIdx];
+
+                pauseOverlay.classList.remove('hidden');
+                pauseBtn.textContent = '▶️ 繼續';
+            } else {
+                pauseOverlay.classList.add('hidden');
+                pauseBtn.textContent = '⏸️ 暫停';
+            }
+        }
+
+        function toggleRelaxMode() {
+            isRelaxMode = !isRelaxMode;
+            const btn = document.getElementById('relax-mode-btn');
+            const timerBar = document.getElementById('timer-bar');
+            const timerSec = document.getElementById('timer-seconds');
+            if (isRelaxMode) {
+                btn.textContent = '休閒無計時 ∞';
+                btn.className = 'text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-400 text-slate-950 border border-amber-300 shrink-0 transition';
+                timerBar.style.width = '100%';
+                if (timerSec) timerSec.textContent = '∞';
+            } else {
+                btn.textContent = '計時模式';
+                btn.className = 'theme-subpanel text-[11px] font-bold px-2 py-0.5 rounded-lg border shrink-0 transition';
+                updateHUD();
+            }
+        }
+
+        function formatTime(sec) {
+            const s = Math.max(0, Math.ceil(sec));
+            const m = Math.floor(s / 60);
+            const rem = s % 60;
+            return `${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+        }
+
+        function updateHUD() {
+            const cfg = LEVEL_CONFIGS[currentLevel];
+            document.getElementById('level-badge').textContent = `第 ${currentLevel} / 9 關`;
+            document.getElementById('level-rule-text').textContent = `移動規則：${cfg.name} — ${cfg.desc}`;
+            document.getElementById('remaining-count').textContent = remainingTiles;
+            document.getElementById('score-text').textContent = score;
+            document.getElementById('hint-count').textContent = hintsLeft;
+            document.getElementById('shuffle-count').textContent = shufflesLeft;
+
+            document.getElementById('hint-btn').disabled = hintsLeft <= 0;
+            document.getElementById('shuffle-btn').disabled = shufflesLeft <= 0;
+
+            if (!isRelaxMode) {
+                const pct = Math.max(0, Math.min(100, (timeLeft / MAX_TIME) * 100));
+                document.getElementById('timer-bar').style.width = `${pct}%`;
+                const timerSec = document.getElementById('timer-seconds');
+                if (timerSec) timerSec.textContent = formatTime(timeLeft);
+            }
+        }
+
+        let toastTimeout = null;
+        function showToast(msg) {
+            const toast = document.getElementById('toast-msg');
+            document.getElementById('toast-text').textContent = msg;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 2200);
+        }
+
+        function showEndModal(isWin, failReason = '') {
+            const modal = document.getElementById('modal-overlay');
+            const icon = document.getElementById('modal-icon');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+            const primaryBtn = document.getElementById('modal-primary-btn');
+
+            modal.classList.remove('hidden');
+
+            if (isWin) {
+                if (currentLevel < 9) {
+                    icon.textContent = '🎉';
+                    title.textContent = `第 ${currentLevel} 關挑戰成功！`;
+                    const nextCfg = LEVEL_CONFIGS[currentLevel + 1];
+                    desc.innerHTML = `目前總分：<b class="text-amber-300">${score}</b> 分<br>下一關規則：<b class="text-emerald-300">${nextCfg.name}</b>`;
+                    primaryBtn.textContent = `挑戰第 ${currentLevel + 1} 關 ➡️`;
+                    primaryBtn.classList.remove('hidden');
+                } else {
+                    icon.textContent = '🏆';
+                    title.textContent = '恭喜全破 9 大關卡！';
+                    desc.innerHTML = `你完成了所有方向的動物麻將連連看！<br>最終總分：<b class="text-amber-300 text-xl">${score}</b> 分`;
+                    primaryBtn.textContent = '從第 1 關重新巡迴 🔄';
+                    primaryBtn.classList.remove('hidden');
+                }
+            } else {
+                icon.textContent = '💥';
+                title.textContent = '挑戰失敗 Game Over';
+                desc.textContent = failReason;
+                primaryBtn.classList.add('hidden');
+            }
+        }
+
+        function nextLevel() {
+            if (currentLevel < 9) {
+                initGame(currentLevel + 1, false);
+            } else {
+                initGame(1, true);
+            }
+        }
+
+        function restartLevel() {
+            initGame(currentLevel, false);
+        }
+
+        // 綁定關卡切換下拉選單
+        document.getElementById('level-select').addEventListener('change', (e) => {
+            const targetLv = parseInt(e.target.value, 10);
+            initGame(targetLv, false);
+        });
+
+        // 支援鍵盤空白鍵快速暫停 (重現以前電腦課防老師經過的「老闆鍵」)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePause();
+            }
+        });
+
+        // 啟動第一局
+        window.onload = () => {
+            initGame(1, true);
+        };
+    </script>
+</body>
+</html>
