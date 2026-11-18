@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>經典動物麻將連連看 (Onet 36 Animals)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --board-cols: 18;
@@ -195,15 +195,27 @@
             pointer-events: none;
         }
 
-        /* Emoji 大小自適應：移除角落數字後置中放大，在小螢幕也清晰好認 */
+        /* Emoji 大小自適應：跨平台統一使用 Q 版 SVG 圖庫，解決 iPad 原生 Emoji 寫實與影薄問題 */
         .tile-emoji {
+            font-family: 'Noto Color Emoji', sans-serif;
             font-size: clamp(1.15rem, 3.2vw, 2.45rem);
             line-height: 1;
-            filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.16));
+            width: 74%;
+            height: 74%;
+            filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.22));
             z-index: 2;
             display: flex;
             align-items: center;
             justify-content: center;
+            pointer-events: none;
+        }
+
+        .tile-emoji-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            pointer-events: none;
         }
 
         /* 柔和底色與底部色條：不遮擋圖案又能輔助分辨相近色動物 */
@@ -532,6 +544,21 @@
             { emoji: '🦆', name: '綠頭鴨', bg: '#ecfdf5', bar: '#047857' },
             { emoji: '🐧', name: '企鵝', bg: '#eef2ff', bar: '#4f46e5' }
         ];
+
+        // 將 Emoji 轉為 Unicode CodePoint，跨裝置載入 Google Noto Q版彩色 SVG (若離線則自動退回 Twemoji / Noto 字型)
+        function getEmojiCodePoints(emojiStr) {
+            return Array.from(emojiStr)
+                .map(ch => ch.codePointAt(0).toString(16))
+                .filter(hex => hex !== 'fe0f'); // 移除變體選擇符以符合 SVG 檔名規範
+        }
+
+        function getCuteEmojiSvgUrl(emojiStr, provider = 'noto') {
+            const codes = getEmojiCodePoints(emojiStr);
+            if (provider === 'noto') {
+                return `https://fonts.gstatic.com/s/e/notoemoji/latest/${codes.join('_')}/emoji.svg`;
+            }
+            return `https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/${codes.join('-')}.svg`;
+        }
 
         // 9 大經典關卡的移動規則定義
         const LEVEL_CONFIGS = {
@@ -1056,12 +1083,20 @@
                         const emojiChar = animalItem.emoji;
                         const bgTint = animalItem.bg;
                         const barColor = animalItem.bar;
+                        const primarySvgUrl = getCuteEmojiSvgUrl(emojiChar, 'noto');
+                        const fallbackSvgUrl = getCuteEmojiSvgUrl(emojiChar, 'twemoji');
 
-                        // 移除左上角數字，改以乾淨的大圖示置中呈現，並搭配專屬色系襯底與底線
+                        // 移除左上角數字，強制載入跨平台統一的 Q 版高飽和全身 SVG 圖示，解決 iPad 圖案影薄問題
                         tileBtn.style.background = `linear-gradient(180deg, #ffffff 0%, ${bgTint} 100%)`;
                         tileBtn.innerHTML = `
                             <div class="tile-corner-tint" style="background: radial-gradient(circle at center, ${barColor}, transparent 75%);"></div>
-                            <span class="tile-emoji" title="${animalItem.name}">${emojiChar}</span>
+                            <span class="tile-emoji" title="${animalItem.name}">
+                                <img src="${primarySvgUrl}" 
+                                     alt="${emojiChar}" 
+                                     class="tile-emoji-img" 
+                                     draggable="false"
+                                     onerror="if(this.src!=='${fallbackSvgUrl}'){this.src='${fallbackSvgUrl}';}else{this.parentElement.textContent='${emojiChar}';}" />
+                            </span>
                             <div class="tile-accent-bar" style="background-color: ${barColor};"></div>
                         `;
 
