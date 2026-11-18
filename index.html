@@ -11,7 +11,7 @@
   <!-- 載入 Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
 
   <style>
     /* ==========================================
@@ -25,6 +25,21 @@
       --cabinet-frame: #381005;    /* 書櫃深咖啡色外框與層板 */
       --cabinet-inner: #7d4406;    /* 書櫃內部棕色背板 */
       --callout-border: #bdbdbd;   /* 說明框與引出線的灰色 */
+      --leader-color: #bdbdbd;     /* 引出線顏色 */
+    }
+
+    /* ==========================================
+       🏛️ 精緻洋房模式 (Victorian Manor Theme)
+       ========================================== */
+    body.manor-theme {
+      --wall-color: #1f332c;       /* 英國古典莊園深墨綠壁紙 */
+      --trim-top: #d4af37;         /* 護牆板金箔壓條 */
+      --trim-body: #2c150c;        /* 胡桃木高護牆板 (Wainscoting) */
+      --floor-color: #4a2511;      /* 紅木拼花地板 */
+      --cabinet-frame: #240e05;    /* 桃花心木深雕外框 */
+      --cabinet-inner: #471c0c;    /* 絲絨紅棕內襯背板 */
+      --callout-border: #c5a059;   /* 古典雕花金框 */
+      --leader-color: #d4af37;     /* 黃銅金引出線 */
     }
 
     body {
@@ -34,6 +49,15 @@
       padding: 0;
       overflow-x: hidden;
       user-select: none;
+      transition: background-color 0.45s ease;
+    }
+
+    /* 洋房古典壁紙暗紋與水晶吊燈柔光 */
+    body.manor-theme {
+      background-image: 
+        radial-gradient(circle at 50% 18%, rgba(255, 232, 179, 0.16) 0%, rgba(12, 24, 20, 0.55) 75%),
+        repeating-linear-gradient(90deg, rgba(212, 175, 55, 0.045) 0px, rgba(212, 175, 55, 0.045) 2px, transparent 2px, transparent 36px),
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0px, rgba(255, 255, 255, 0.02) 1px, transparent 1px, transparent 18px);
     }
 
     /* 房間背景結構：牆面、踢腳板、地板 */
@@ -55,6 +79,28 @@
       bottom: 65px;
       left: 0;
       z-index: 1;
+      transition: all 0.45s ease;
+    }
+
+    /* 洋房版：加高古典護牆板 (Wainscoting) 雕花格紋與鎏金腰線 */
+    body.manor-theme .wall-baseboard {
+      height: 165px;
+      border-top: 10px solid #c5a059;
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.45), inset 0 8px 14px rgba(0, 0, 0, 0.5);
+      background-image: 
+        linear-gradient(to bottom, #7a5823 0px, #3b1c0e 5px, transparent 5px),
+        repeating-linear-gradient(90deg, 
+          #2a1309 0px, 
+          #2a1309 14px, 
+          #3d1d10 14px, 
+          #3d1d10 17px, 
+          #230f07 17px, 
+          #230f07 76px, 
+          #4d2616 76px, 
+          #4d2616 79px,
+          #2a1309 79px,
+          #2a1309 92px
+        );
     }
 
     .room-floor {
@@ -65,6 +111,44 @@
       bottom: 0;
       left: 0;
       z-index: 1;
+      transition: all 0.45s ease;
+    }
+
+    /* 洋房版：人字拼實木地板與波斯紅金地毯邊 */
+    body.manor-theme .room-floor {
+      border-top: 3px solid #1a0903;
+      box-shadow: inset 0 8px 18px rgba(0, 0, 0, 0.55);
+      background-image: 
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 2px, transparent 2px, transparent 64px),
+        linear-gradient(to bottom, #3b1b0c, #240f05);
+    }
+
+    /* 洋房版：書櫃與茶几底下的古典波斯宮廷地毯 */
+    .manor-rug {
+      position: absolute;
+      bottom: -24px;
+      left: -18px;
+      right: -12px;
+      height: 44px;
+      background: linear-gradient(90deg, #6e1414 0%, #8a1c1c 50%, #6e1414 100%);
+      border: 3px solid #d4af37;
+      outline: 4px solid #4a0c0c;
+      border-radius: 6px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
+      z-index: 5;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.45s ease;
+    }
+    .manor-rug::before {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      border: 1.5px dashed rgba(243, 217, 148, 0.65);
+      border-radius: 3px;
+    }
+    body.manor-theme .manor-rug {
+      opacity: 1;
     }
 
     /* 整合時鐘、開關、茶几與書櫃的固定比例舞台，窄螢幕時整體一起等比例縮放，絕不重疊 */
@@ -89,6 +173,44 @@
       padding: 14px 14px 12px 14px;
       box-shadow: 0 18px 35px rgba(0, 0, 0, 0.28);
       border-radius: 2px;
+      transition: all 0.45s ease;
+    }
+
+    /* 洋房版書櫃：桃花心木外框、黃銅鑲邊與立體柱頭感 */
+    body.manor-theme .bookcase {
+      background: linear-gradient(90deg, #1f0b04 0%, #33150a 4%, #240e05 96%, #140702 100%);
+      border: 2px solid #8c662b;
+      box-shadow: 
+        0 22px 48px rgba(0, 0, 0, 0.65),
+        inset 0 0 0 2px #1a0903,
+        inset 0 2px 6px rgba(255, 215, 128, 0.25);
+      border-radius: 4px 4px 2px 2px;
+    }
+
+    /* 洋房版書櫃頂部古典冠飾 (Crown Molding) */
+    .manor-crown {
+      position: absolute;
+      bottom: 100%;
+      left: -8px;
+      right: -8px;
+      height: 16px;
+      background: linear-gradient(to bottom, #d4af37 0%, #592512 28%, #2b1006 85%, #8c662b 100%);
+      border-radius: 4px 4px 0 0;
+      box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.45s ease;
+    }
+    body.manor-theme .manor-crown {
+      opacity: 1;
+    }
+
+    /* 洋房版的時候把貓咪稍微往上墊高站在古典冠飾上 */
+    #catWrapper {
+      transition: transform 0.45s ease;
+    }
+    body.manor-theme #catWrapper {
+      transform: translateY(-14px);
     }
 
     /* 每一層書架格 */
@@ -105,6 +227,18 @@
       box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.35);
       border-bottom: 1px solid rgba(255, 255, 255, 0.12);
       overflow: hidden; /* 防止任何子元素意外超出內框 */
+      transition: all 0.45s ease;
+    }
+
+    /* 洋房版層架：深胡桃木直紋背板 + 層板燙金飾條 */
+    body.manor-theme .shelf-row {
+      background-color: #3d1609;
+      background-image: 
+        linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.12) 35%, rgba(0,0,0,0.3) 100%),
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 2px, transparent 2px, transparent 28px);
+      box-shadow: inset 0 12px 22px rgba(0, 0, 0, 0.65), inset 0 -2px 4px rgba(0,0,0,0.4);
+      border-top: 1px solid rgba(212, 175, 55, 0.22);
+      border-bottom: 2px solid #c5a059;
     }
 
     .shelf-row:last-child {
@@ -119,6 +253,12 @@
       height: 10px;
       background-color: var(--cabinet-frame);
       border-radius: 0 4px 4px 0;
+      transition: all 0.45s ease;
+    }
+    body.manor-theme .cabinet-peg {
+      background: linear-gradient(to bottom, #f5d77f, #b38728);
+      width: 6px;
+      box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
     }
 
     /* 一套書 (代表一個遊戲，本身就是超連結) */
@@ -152,6 +292,29 @@
       border-bottom: none;
       box-shadow: inset 2px 0 3px rgba(255, 255, 255, 0.18), inset -2px 0 4px rgba(0, 0, 0, 0.2);
       border-radius: 2px 2px 0 0;
+      transition: all 0.35s ease;
+    }
+
+    /* 洋房版精裝書脊：立體圓弧皮革光澤與上下燙金箍線 */
+    body.manor-theme .book-spine {
+      border-radius: 4px 4px 0 0;
+      border: 1px solid rgba(20, 10, 5, 0.55);
+      border-bottom: none;
+      box-shadow: 
+        inset 4px 0 6px rgba(255, 255, 255, 0.26), 
+        inset -5px 0 8px rgba(0, 0, 0, 0.45),
+        inset 0 2px 0 rgba(245, 215, 127, 0.55);
+      background-image: 
+        linear-gradient(to bottom, 
+          transparent 6px, 
+          rgba(245, 215, 127, 0.75) 6px, 
+          rgba(184, 138, 44, 0.85) 8.5px, 
+          transparent 8.5px,
+          transparent calc(100% - 9px),
+          rgba(245, 215, 127, 0.75) calc(100% - 9px),
+          rgba(184, 138, 44, 0.85) calc(100% - 6.5px),
+          transparent calc(100% - 6.5px)
+        );
     }
 
     /* 書背上的白色標籤 (粗款與細線款) */
@@ -160,6 +323,7 @@
       height: 58%;
       background-color: #ffffff;
       border-radius: 1px;
+      transition: all 0.35s ease;
     }
 
     .spine-label-thin {
@@ -167,6 +331,19 @@
       height: 68%;
       background-color: #ffffff;
       border-radius: 1px;
+      transition: all 0.35s ease;
+    }
+
+    /* 洋房版書背標籤：羊皮紙金邊銘牌與燙金中線 */
+    body.manor-theme .spine-label-thick {
+      background: linear-gradient(180deg, #fff8e7 0%, #f0dfc0 100%);
+      border: 1.5px solid #b5892e;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      border-radius: 2px;
+    }
+    body.manor-theme .spine-label-thin {
+      background: linear-gradient(180deg, #ffe89e 0%, #c79732 50%, #ffdf85 100%);
+      box-shadow: 0 0 3px rgba(0,0,0,0.35);
     }
 
     /* 盆栽與泰迪熊搖晃動畫 */
@@ -226,10 +403,66 @@
       border: 5px solid var(--cabinet-frame);
       box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2), inset 0 2px 5px rgba(0, 0, 0, 0.12);
       cursor: pointer;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease, border-color 0.4s ease, box-shadow 0.4s ease, background-color 0.4s ease;
     }
     .wall-clock:hover {
       transform: scale(1.06);
+    }
+
+    /* 洋房版懷舊黃銅骨董掛鐘與鐘擺 */
+    body.manor-theme .wall-clock {
+      background: radial-gradient(circle, #fffdf4 60%, #e8d7b4 100%);
+      border: 5px solid #c59b38;
+      outline: 2px solid #4a3109;
+      box-shadow: 
+        0 10px 22px rgba(0, 0, 0, 0.55), 
+        inset 0 0 8px rgba(138, 98, 20, 0.45),
+        0 0 0 4px rgba(212, 175, 55, 0.2);
+    }
+
+    @keyframes pendulumSwing {
+      0%, 100% { transform: translateX(-50%) rotate(11deg); }
+      50% { transform: translateX(-50%) rotate(-11deg); }
+    }
+    .clock-pendulum {
+      position: absolute;
+      top: 96%;
+      left: 50%;
+      width: 16px;
+      height: 36px;
+      transform-origin: top center;
+      animation: pendulumSwing 2s ease-in-out infinite;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      z-index: -1;
+    }
+    body.manor-theme .clock-pendulum {
+      opacity: 1;
+    }
+
+    /* 洋房版壁掛畫框裝飾 (時鐘上方的小巧巴洛克金框風景畫) */
+    .manor-wall-frame {
+      position: absolute;
+      left: 19px;
+      bottom: 486px;
+      width: 88px;
+      height: 58px;
+      padding: 5px;
+      background: linear-gradient(135deg, #f3d678 0%, #9c711c 50%, #e6c45c 100%);
+      border-radius: 3px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5), inset 0 0 3px #3d2805;
+      z-index: 15;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(6px);
+      transition: all 0.45s ease;
+      cursor: pointer;
+    }
+    body.manor-theme .manor-wall-frame {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
     }
 
     /* 牆壁電燈開關 (固定於時鐘正下方) */
@@ -249,10 +482,21 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: transform 0.1s ease;
+      transition: transform 0.1s ease, background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
     }
     .wall-switch:active {
       transform: scale(0.94);
+    }
+
+    /* 洋房版黃銅雕花電燈開關面板 */
+    body.manor-theme .wall-switch {
+      background: linear-gradient(145deg, #e8c66b 0%, #9e7623 100%);
+      border: 2.5px solid #593e0c;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+    }
+    body.manor-theme .switch-rocker {
+      background: linear-gradient(to bottom, #fff5d6, #c9a145);
+      border-color: #593e0c;
     }
 
     /* 「円」字型小茶几與馬克杯組合 (固定於開關正下方、書櫃左側) */
@@ -265,6 +509,15 @@
       flex-direction: column;
       align-items: center;
       transform-origin: bottom left;
+    }
+
+    /* 洋房版小茶几的燙金鑲嵌裝飾線 */
+    .table-gold-trim {
+      opacity: 0;
+      transition: opacity 0.45s ease;
+    }
+    body.manor-theme .table-gold-trim {
+      opacity: 1;
     }
 
     /* 關燈模式的聚光燈遮罩 */
@@ -300,9 +553,29 @@
       background-color: #ffffff;
       border: 5px solid var(--callout-border);
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-      transition: opacity 0.18s ease, transform 0.18s ease;
+      transition: opacity 0.18s ease, transform 0.18s ease, background 0.4s ease, border-color 0.4s ease;
       z-index: 30;
       pointer-events: none; /* 滑鼠移開書本即消失，不擋點擊 */
+    }
+
+    /* 洋房版說明框：古典羊皮紙與雙層金邊牌匾 */
+    body.manor-theme .callout-card {
+      background: linear-gradient(160deg, #fffcf2 0%, #f5ebd1 100%);
+      border: 3px solid #c5a059;
+      outline: 2px solid #593e0c;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), inset 0 0 0 3px rgba(197, 160, 89, 0.25);
+      border-radius: 6px;
+    }
+    body.manor-theme #infoTitle {
+      font-family: 'Noto Serif TC', serif;
+      color: #381808;
+    }
+    body.manor-theme #infoDesc {
+      color: #4f2c17;
+    }
+    body.manor-theme #infoHint {
+      border-color: rgba(197, 160, 89, 0.3);
+      color: #8c662b;
     }
 
     .callout-hidden {
@@ -321,6 +594,7 @@
       border-radius: 999px;
       width: 82%;
       margin: 6px auto 12px auto;
+      transition: background-color 0.4s ease;
     }
 
     /* 動態引出折線 SVG 畫布 */
@@ -332,6 +606,14 @@
       pointer-events: none;
       z-index: 25;
       transition: opacity 0.18s ease;
+    }
+    #leaderPolyline {
+      stroke: var(--leader-color);
+      transition: stroke 0.4s ease;
+    }
+    #leaderStartDot {
+      fill: var(--leader-color);
+      transition: fill 0.4s ease;
     }
   </style>
 </head>
@@ -350,15 +632,19 @@
     <circle id="leaderStartDot" cx="-20" cy="-20" r="4" fill="#bdbdbd" />
   </svg>
 
-  <!-- 頂部簡潔小提示與音效按鈕 -->
-  <header class="fixed top-0 left-0 right-0 z-40 flex justify-between items-center px-4 sm:px-8 py-3 pointer-events-none">
-    <div class="bg-white/80 backdrop-blur-sm px-3.5 py-1.5 rounded-full shadow-sm border border-amber-900/15 pointer-events-auto flex items-center gap-2">
+  <!-- 頂部簡潔小提示、風格切換與音效按鈕 -->
+  <header class="fixed top-0 left-0 right-0 z-40 flex justify-between items-center px-3 sm:px-8 py-3 pointer-events-none">
+    <div class="bg-white/85 backdrop-blur-sm px-3.5 py-1.5 rounded-full shadow-sm border border-amber-900/15 pointer-events-auto flex items-center gap-2">
       <span class="text-base">📚</span>
       <span class="text-xs sm:text-sm font-bold text-amber-950">我的小遊戲書櫃</span>
     </div>
 
     <div class="flex items-center gap-2 pointer-events-auto">
-      <button id="soundBtn" class="bg-white/80 hover:bg-white px-3 py-1.5 rounded-full text-xs font-bold text-amber-950 shadow-sm border border-amber-900/15 transition">
+      <button id="themeToggleBtn" class="bg-amber-950 text-amber-100 hover:bg-amber-900 px-3.5 py-1.5 rounded-full text-xs font-bold shadow-md border border-amber-400/40 transition flex items-center gap-1.5">
+        <span>🏛️</span>
+        <span id="themeToggleText">精緻洋房版</span>
+      </button>
+      <button id="soundBtn" class="bg-white/85 hover:bg-white px-3 py-1.5 rounded-full text-xs font-bold text-amber-950 shadow-sm border border-amber-900/15 transition">
         🔊 音效開
       </button>
     </div>
@@ -369,6 +655,22 @@
 
     <!-- 整合家具舞台：將時鐘、開關、茶几與書櫃綁定在同一個座標系，手機上自動等比例縮放，絕不重疊 -->
     <div id="furnitureStage" class="furniture-stage">
+
+      <!-- 洋房版專屬：巴洛克金框古典風景油畫 (在時鐘正上方) -->
+      <div id="manorPainting" class="manor-wall-frame" title="古典莊園油畫">
+        <svg width="100%" height="100%" viewBox="0 0 78 48" preserveAspectRatio="none">
+          <rect width="78" height="48" fill="#182b38"/>
+          <!-- 月亮與星空 -->
+          <circle cx="58" cy="14" r="6" fill="#fae596" opacity="0.9"/>
+          <circle cx="20" cy="11" r="1" fill="#ffffff" opacity="0.7"/>
+          <circle cx="38" cy="8" r="1.2" fill="#ffffff" opacity="0.8"/>
+          <!-- 遠山與松林剪影 -->
+          <path d="M0 36 L22 18 L44 34 L62 21 L78 35 L78 48 L0 48 Z" fill="#254236"/>
+          <path d="M0 40 L15 28 L35 41 L55 27 L78 42 L78 48 L0 48 Z" fill="#14261f"/>
+          <!-- 畫框內金線 -->
+          <rect x="1.5" y="1.5" width="75" height="45" fill="none" stroke="#d4af37" stroke-width="1" opacity="0.6"/>
+        </svg>
+      </div>
 
       <!-- 牆壁同步指針時鐘 (與使用者系統時間即時同步) -->
       <div id="wallClock" class="wall-clock" title="點擊查看現在時間">
@@ -393,6 +695,13 @@
           <!-- 中心軸心 -->
           <circle cx="50" cy="50" r="3.5" fill="#381005"/>
         </svg>
+        <!-- 洋房版專屬：擺動黃銅鐘擺 -->
+        <div class="clock-pendulum">
+          <svg width="16" height="36" viewBox="0 0 16 36">
+            <line x1="8" y1="0" x2="8" y2="24" stroke="#c59b38" stroke-width="2.2"/>
+            <circle cx="8" cy="27" r="6.5" fill="#e6c15c" stroke="#785612" stroke-width="1.5"/>
+          </svg>
+        </div>
       </div>
 
       <!-- 牆壁電燈開關 (點一下切換關燈夜讀模式) -->
@@ -415,8 +724,10 @@
             <!-- 杯身 -->
             <rect x="8" y="19" width="23" height="25" rx="3" fill="#ff7661" stroke="#9e2f20" stroke-width="2.2"/>
             <ellipse cx="19.5" cy="20" rx="10.5" ry="2.5" fill="#5c2c0c"/>
-            <!-- 杯身小愛心 -->
+            <!-- 杯身小愛心 / 洋房金邊 -->
             <circle cx="19.5" cy="31" r="3" fill="#fff3e6"/>
+            <line class="table-gold-trim" x1="9" y1="24" x2="30" y2="24" stroke="#f5d77f" stroke-width="1.3"/>
+            <line class="table-gold-trim" x1="9" y1="40" x2="30" y2="40" stroke="#f5d77f" stroke-width="1.3"/>
           </svg>
         </div>
 
@@ -432,15 +743,28 @@
           <line x1="14" y1="46.5" x2="64" y2="46.5" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
           <!-- 「円」中間的垂直小立柱 (丨) -->
           <rect x="35" y="9" width="8" height="38" fill="#7d4406" stroke="#381005" stroke-width="2"/>
+          <!-- 洋房版專屬：茶几黃銅鑲邊與桌腳銅套 -->
+          <g class="table-gold-trim">
+            <line x1="13" y1="4" x2="65" y2="4" stroke="#d4af37" stroke-width="2"/>
+            <line x1="14" y1="50.5" x2="64" y2="50.5" stroke="#d4af37" stroke-width="1.5"/>
+            <rect x="3.5" y="103" width="11" height="8" rx="1" fill="#d4af37"/>
+            <rect x="63.5" y="103" width="11" height="8" rx="1" fill="#d4af37"/>
+          </g>
         </svg>
       </div>
+
+      <!-- 洋房版專屬：家具底下的波斯紅金宮廷地毯 -->
+      <div class="manor-rug"></div>
 
       <!-- ==========================================
            核心四層木書櫃 (由 JS 自動根據陣列渲染)
            ========================================== -->
       <div id="bookcaseContainer" class="bookcase shrink-0">
+        <!-- 洋房版專屬：書櫃頂部古典雕花冠飾 -->
+        <div class="manor-crown"></div>
+
         <!-- 書櫃頂端擺飾：柔和手繪風打盹小橘貓 (與泰迪熊同款暖褐手繪描邊) -->
-        <div class="absolute bottom-full left-0 right-0 flex justify-end items-end px-5 -mb-[2px] pointer-events-none">
+        <div id="catWrapper" class="absolute bottom-full left-0 right-0 flex justify-end items-end px-5 -mb-[2px] pointer-events-none">
           <div id="decor-cat" class="decor-item pointer-events-auto" title="打盹的小橘貓">
             <svg width="116" height="68" viewBox="0 0 124 72" fill="none" xmlns="http://www.w3.org/2000/svg">
               <!-- 帶白尖與手繪描邊的搖擺尾巴 -->
@@ -976,6 +1300,16 @@
           showToast(`🕒 現在時間是 ${hh}:${mm}:${ss}`);
         });
       }
+
+      // 洋房版專屬：點擊牆上古典風景油畫的彩蛋
+      const paintingEl = document.getElementById('manorPainting');
+      if (paintingEl) {
+        paintingEl.addEventListener('click', () => {
+          playPopSound(640, 0.08);
+          triggerWiggle(paintingEl);
+          showToast("🖼️ 畫框背後沒有藏保險箱，但月光很美！");
+        });
+      }
     }
 
     // 即時同步使用者系統時間，更新時針、分針、秒針角度
@@ -1114,6 +1448,23 @@
       soundOn = !soundOn;
       soundBtn.textContent = soundOn ? '🔊 音效開' : '🔇 音效關';
       if (soundOn) playPopSound(520, 0.06);
+    });
+
+    // 風格切換：「精緻洋房版」與「手繪復古版」一鍵切換
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeToggleText = document.getElementById('themeToggleText');
+    themeToggleBtn.addEventListener('click', () => {
+      const isManor = document.body.classList.toggle('manor-theme');
+      playPopSound(isManor ? 620 : 480, 0.09);
+      if (isManor) {
+        themeToggleText.textContent = '手繪復古版';
+        themeToggleBtn.querySelector('span:first-child').textContent = '🎨';
+        showToast('🏛️ 已切換為「精緻古典洋房」風格！');
+      } else {
+        themeToggleText.textContent = '精緻洋房版';
+        themeToggleBtn.querySelector('span:first-child').textContent = '🏛️';
+        showToast('🎨 已切回「小畫家手繪復古」風格！');
+      }
     });
 
     // 動態計算手機螢幕寬度，將整組家具舞台（時鐘+開關+茶几+書櫃）等比例縮放，確保完全不重疊
