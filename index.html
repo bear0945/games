@@ -5,7 +5,13 @@
         async src="//gc.zgo.at/count.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="bear0945">
+  <meta name="description" content="Created & curated by bear0945 (https://bear0945.github.io)">
   <title>我的遊戲書櫃 | Personal Game Bookshelf</title>
+  <!-- =========================================================
+       Handcrafted & Curated by bear0945
+       Personal Game Bookshelf: https://bear0945.github.io
+       ========================================================= -->
   <!-- 載入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- 載入 Google Fonts -->
@@ -835,7 +841,14 @@
 
     <!-- 房間底部踢腳板與粉紅地板 -->
     <div class="wall-baseboard"></div>
-    <div class="room-floor"></div>
+    <div class="room-floor flex items-end justify-end px-4 pb-1.5">
+      <!-- 隱形墨水簽名：平常與地板同色，反白選取或關燈時才會浮現 -->
+      <span class="text-[11px] font-mono tracking-wider select-text transition-colors duration-500"
+            style="color: var(--floor-color);"
+            title="被你發現隱藏簽名啦！">
+        crafted by bear0945
+      </span>
+    </div>
   </div>
 
   <!-- 深夜關燈模式聚光燈遮罩 -->
@@ -1193,77 +1206,83 @@
             document.querySelectorAll('.book-set').forEach(b => b.classList.remove('active-touch'));
             el.classList.add('active-touch');
             showGameCallout(gameId, true);
-            return;
+          } else {
+            playPopSound(680, 0.08);
           }
-          playPopSound(360, 0.08);
         });
       });
 
-      // 手機版點擊書櫃外的空白處時，收起說明視窗
-      document.addEventListener('pointerdown', (e) => {
-        if (!e.target.closest('.book-set') && hoveredGameId) {
-          document.querySelectorAll('.book-set').forEach(b => b.classList.remove('active-touch'));
-          hideGameCallout();
-        }
-      });
+      // 隨機挑選台詞（自動避開連續兩次出現同一句）
+      function pickRandomLine(lines, state) {
+        if (lines.length <= 1) return lines[0];
+        let idx;
+        do {
+          idx = Math.floor(Math.random() * lines.length);
+        } while (idx === state.lastIdx);
+        state.lastIdx = idx;
+        return lines[idx];
+      }
 
-      // 鬱金香點擊效果
+      // 鬱金香點擊效果（隨機互動訊息）
       const flowerPot = document.getElementById('decor-tulip');
-      let tulipClicks = 0;
+      const tulipLines = [
+        "🌷 小鬱金香朝你點了點頭！",
+        "🌿 陽光剛剛好，花瓣看起來更有精神了！",
+        "✨ 葉子輕輕晃動，好像在跟著音樂打拍子～",
+        "💧 剛澆過水，花盆摸起來涼涼的！",
+        "🐝 好像有一隻看不見的小蜜蜂剛飛過去？",
+        "🌱 仔細一看，花盆底下並沒有藏著鑰匙喔！",
+        "🌸 鬱金香害羞地微微彎了一下腰～"
+      ];
+      const tulipState = { lastIdx: -1 };
       if (flowerPot) {
         flowerPot.addEventListener('click', () => {
-          tulipClicks++;
-          playPopSound(680 + Math.min(tulipClicks * 20, 200), 0.1);
+          playPopSound(640 + Math.floor(Math.random() * 180), 0.1);
           triggerWiggle(flowerPot);
-          if (tulipClicks === 1) {
-            showToast("🌷 小鬱金香朝你點了點頭！");
-          } else if (tulipClicks === 5) {
-            showToast("🌿 澆水太多啦，鬱金香已經精神百倍了！");
-          } else {
-            showToast(`🌷 鬱金香開心地搖擺中（已互動 ${tulipClicks} 次）`);
-          }
+          showToast(pickRandomLine(tulipLines, tulipState));
         });
       }
 
-      // 泰迪熊點擊效果 (支援多次點擊彩蛋)
+      // 泰迪熊點擊效果（隨機互動訊息）
       const teddyBear = document.getElementById('decor-teddy');
-      let teddyClicks = 0;
+      const teddyLines = [
+        "🧸 泰迪熊開心地晃了晃圓耳朵！",
+        "🧸 泰迪熊：「今天想挑哪一本書來玩呢？」",
+        "🎀 紅色蝴蝶結歪了一點，幫牠重新整理好了！",
+        "🤫 泰迪熊小聲說：「書櫃最底層其實很涼快喔～」",
+        "💫 戳到軟綿綿的肚子了，手感一百分！",
+        "🕵️ 泰迪熊的口袋空空的，看來今天沒有藏密碼紙條。",
+        "🎲 泰迪熊：「如果選不出要玩哪個，不如先玩一局數獨？」",
+        "🤗 泰迪熊張開短手手給了你一個加油抱抱！"
+      ];
+      const teddyState = { lastIdx: -1 };
       if (teddyBear) {
         teddyBear.addEventListener('click', () => {
-          teddyClicks++;
-          playPopSound(420, 0.12);
+          playPopSound(400 + Math.floor(Math.random() * 90), 0.12);
           triggerWiggle(teddyBear);
-          if (teddyClicks === 1) {
-            showToast("🧸 泰迪熊開心地晃了晃耳朵！");
-          } else if (teddyClicks === 3) {
-            showToast("🧸 泰迪熊：「今天想玩哪一本書呢？」");
-          } else if (teddyClicks === 5) {
-            showToast("😵‍💫 泰迪熊被你戳了 5 下，頭都有點暈啦！");
-          } else if (teddyClicks >= 10) {
-            showToast(`🏆 泰迪熊忠實粉絲達成！（已戳了 ${teddyClicks} 下）`);
-          } else {
-            showToast(`🧸 泰迪熊搖搖頭（已戳 ${teddyClicks} 下）`);
-          }
+          showToast(pickRandomLine(teddyLines, teddyState));
         });
       }
 
-      // 書櫃頂端：打盹小橘貓點擊效果
+      // 書櫃頂端：打盹小橘貓點擊效果（隨機互動訊息）
       const catEl = document.getElementById('decor-cat');
-      let catClicks = 0;
+      const catLines = [
+        "🐱 喵嗚～小橘貓翻了個身繼續打盹",
+        "💤 呼嚕呼嚕...這隻貓已經進入深度放空模式",
+        "🐾 摸到軟呼呼的白色山竹小肉球了！",
+        "🐟 小橘貓在夢裡好像正在追一隻小魚乾...",
+        "✨ 尾巴尖端輕輕勾了一下，表示牠有聽到你喔！",
+        "🍞 縮成一顆完美的烤橘子麵包，完全不想動彈",
+        "😸 瞇著眼睛看了你一眼，又安心地把頭埋進前爪裡"
+      ];
+      const catState = { lastIdx: -1 };
       if (catEl) {
         catEl.addEventListener('click', () => {
-          catClicks++;
           // 模擬可愛的貓叫滑音
           playPopSound(760, 0.14);
           setTimeout(() => playPopSound(620, 0.16), 90);
           triggerWiggle(catEl);
-          if (catClicks === 1) {
-            showToast("🐱 喵嗚～小橘貓翻了個身繼續打盹");
-          } else if (catClicks === 4) {
-            showToast("💤 呼嚕呼嚕...這隻貓已經進入深度放空模式");
-          } else {
-            showToast(`🐾 摸了小橘貓第 ${catClicks} 下，呼嚕聲變大了！`);
-          }
+          showToast(pickRandomLine(catLines, catState));
         });
       }
 
@@ -1492,6 +1511,11 @@
 
     // 初始化啟動
     window.addEventListener('DOMContentLoaded', () => {
+      console.log(
+        "%c📚 我的小遊戲書櫃 %c Crafted by bear0945 (https://bear0945.github.io)",
+        "background: #381005; color: #f7c594; padding: 4px 8px; border-radius: 4px 0 0 4px; font-weight: bold;",
+        "background: #f7c594; color: #381005; padding: 4px 8px; border-radius: 0 4px 4px 0; font-weight: bold;"
+      );
       renderBookcase();
       fitStageToScreen();
       updateWallClock();
