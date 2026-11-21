@@ -1145,6 +1145,12 @@
                             tileBtn.addEventListener('click', () => onTileClick(r, c));
                             cellDiv.appendChild(tileBtn);
                         }
+                    } else if (animalId !== 0) {
+                        // 若重力移動或洗牌後，同種動物剛好滑進原本剛消除的格子，需清除殘留的透明/震動狀態
+                        const existingTile = cellDiv.firstElementChild;
+                        if (existingTile) {
+                            existingTile.classList.remove('matched', 'shake');
+                        }
                     }
                 }
             }
